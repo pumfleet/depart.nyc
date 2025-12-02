@@ -1,6 +1,7 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useRouter } from 'next/navigation';
 import RouteBadge from './RouteBadge';
 import { StopTime } from '@/lib/types';
 
@@ -130,11 +131,18 @@ export default function DepartureBoard({
 }
 
 function TrainItem({ train, formatTime }: { train: StopTime, formatTime: (t: dayjs.Dayjs) => string }) {
+    const router = useRouter();
     const arrivalTime = dayjs.unix(parseInt(train.arrival.time));
     const timeDisplay = formatTime(arrivalTime);
 
+    const handleClick = () => {
+        router.push(`/trips/${train.trip.id}`);
+    };
+
     return (
-        <li className="flex items-center justify-between bg-neutral-900 border-2 border-neutral-600 p-3">
+        <li
+            className="flex items-center justify-between bg-neutral-900 border-2 border-neutral-600 p-3 cursor-pointer hover:bg-neutral-800 transition-colors"
+            onClick={handleClick}>
             <div className="flex items-center space-x-3">
                 <RouteBadge routeId={train.trip.route.id} color={train.trip.route.color} />
                 <div>
