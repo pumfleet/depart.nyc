@@ -16,6 +16,14 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "depart.nyc",
   description: "Departure times for the New York City subway.",
+  themeColor: '#000',
+  icons: {
+    icon: [
+      { url: '/icon.png', sizes: '32x32' },
+      { url: '/favicon.ico' },
+    ],
+    apple: '/ios.png',
+  },
 };
 
 export default function RootLayout({
