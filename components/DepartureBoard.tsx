@@ -100,7 +100,7 @@ export default function DepartureBoard({
     }, {} as Record<string, StopTime[]>);
 
     return (
-        <div className="p-4 text-white">
+        <div className="p-4 text-white grid lg:grid-cols-2 lg:gap-8">
             {Object.entries(groupedTrains).map(([direction, trains]) => {
                 // Sort and limit per group
                 const sortedTrains = [...trains].sort((a, b) =>

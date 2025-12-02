@@ -74,7 +74,7 @@ export default function StationSearch() {
     }, [selectedIndex, results]);
 
     return (
-        <div className="relative w-full max-w-md mx-auto mt-4">
+        <div className="relative w-full mt-4">
             <div className="relative">
                 <input
                     ref={inputRef}
