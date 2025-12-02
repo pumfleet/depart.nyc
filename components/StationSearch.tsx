@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Fuse from "fuse.js";
 import stationsData from "../data/stations.json";
+import RouteBadge from "./RouteBadge";
 
 type Station = {
     id: string;
@@ -33,7 +34,7 @@ export default function StationSearch() {
         }
 
         const searchResults = fuse.search(query).map((result) => result.item);
-        setResults(searchResults.slice(0, 10)); // Limit to top 10 results
+        setResults(searchResults.slice(0, 5)); // Limit to top 5 results
         setSelectedIndex(0);
     }, [query, fuse]);
 
@@ -73,7 +74,7 @@ export default function StationSearch() {
     }, [selectedIndex, results]);
 
     return (
-        <div className="relative w-full max-w-md mx-auto mt-8">
+        <div className="relative w-full max-w-md mx-auto mt-4">
             <div className="relative">
                 <input
                     ref={inputRef}
@@ -81,8 +82,9 @@ export default function StationSearch() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Search stations..."
-                    className="w-full px-4 py-3 text-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="West 4 St"
+                    className={`w-full text-4xl pb-2 focus:outline-none border-b-4 tracking-tight ${query ? "border-orange-500" : "border-neutral-700"
+                        }`}
                     autoFocus
                 />
                 {query && (
@@ -102,36 +104,29 @@ export default function StationSearch() {
             {results.length > 0 && (
                 <ul
                     ref={listRef}
-                    className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg max-h-96 overflow-y-auto"
+                    className="absolute z-10 w-full mt-4 max-h-96 overflow-y-auto space-y-2"
                 >
                     {results.map((station, index) => (
                         <li
                             key={`${station.id}-${index}`}
                             onClick={() => handleSelect(station.id)}
-                            className={`px-4 py-3 cursor-pointer flex justify-between items-center ${index === selectedIndex
-                                    ? "bg-blue-50 dark:bg-blue-900/30"
-                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            className={`px-4 py-3 cursor-pointer flex justify-between items-center bg-neutral-900 border-2 border-neutral-600 ${index === selectedIndex
+                                && "border-orange-500"
                                 }`}
                         >
                             <div>
-                                <div className="font-medium text-gray-900 dark:text-gray-100">
+                                <div className="font-medium text-white">
                                     {station.name}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    ID: {station.id}
                                 </div>
                             </div>
                             <div className="flex gap-1">
                                 {station.lines.map((line) => (
-                                    <span
+                                    <RouteBadge
                                         key={line}
-                                        className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-gray-600 rounded-full"
-                                        style={{
-                                            backgroundColor: getLineColor(line)
-                                        }}
-                                    >
-                                        {line}
-                                    </span>
+                                        routeId={line}
+                                        color={getLineColor(line).replace('#', '')}
+                                        size="small"
+                                    />
                                 ))}
                             </div>
                         </li>

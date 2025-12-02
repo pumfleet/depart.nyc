@@ -3,9 +3,10 @@ import React from 'react';
 interface RouteBadgeProps {
     routeId: string;
     color: string;
+    size?: 'default' | 'small';
 }
 
-export default function RouteBadge({ routeId, color }: RouteBadgeProps) {
+export default function RouteBadge({ routeId, color, size = 'default' }: RouteBadgeProps) {
     // Calculate perceived brightness using relative luminance formula
     const getTextColor = (hexColor: string): string => {
         // Convert hex to RGB
@@ -22,15 +23,27 @@ export default function RouteBadge({ routeId, color }: RouteBadgeProps) {
 
     const textColor = getTextColor(color);
 
+    // Check if route ends with X (express route)
+    const isExpress = routeId.endsWith('X');
+    const displayId = isExpress ? routeId.slice(0, -1) : routeId;
+
+    // Size variants
+    const sizeClasses = size === 'small'
+        ? 'w-6 h-6 text-sm'
+        : 'w-8 h-8 text-xl';
+
     return (
         <div
-            className="flex items-center justify-center w-8 h-8 rounded-full font-bold text-xl"
+            className={`flex items-center justify-center font-bold ${sizeClasses} ${isExpress ? '' : 'rounded-full'}`}
             style={{
                 backgroundColor: `#${color}`,
-                color: textColor
+                color: textColor,
+                transform: isExpress ? 'rotate(45deg) scale(0.707)' : undefined,
             }}
         >
-            {routeId}
+            <span style={{ transform: isExpress ? 'rotate(-45deg)' : undefined }}>
+                {displayId}
+            </span>
         </div>
     );
 }
