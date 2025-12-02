@@ -157,6 +157,19 @@ export default function TripPage() {
 
     const position = getCurrentPosition();
 
+    // Calculate which stops to show (3 before current position + all future stops)
+    const getVisibleStops = () => {
+        if (!position || !tripData) return tripData.stopTimes;
+
+        const currentIdx = position.currentStopIndex;
+        const startIdx = Math.max(0, currentIdx - 2); // Show 3 stops before current (current - 2 means 3 total: -2, -1, 0)
+
+        return tripData.stopTimes.slice(startIdx);
+    };
+
+    const visibleStops = getVisibleStops();
+    const hiddenStopsCount = tripData.stopTimes.length - visibleStops.length;
+
     return (
         <div className="min-h-screen bg-black text-white">
             <div className="sticky top-0 bg-black border-b border-neutral-800 p-4 z-10">
@@ -174,44 +187,75 @@ export default function TripPage() {
 
             <div className="p-4">
                 <div className="relative">
+                    {/* Indicator for hidden stops */}
+                    {hiddenStopsCount > 0 && (
+                        <div className="mb-4 text-sm text-neutral-500 italic">
+                            {hiddenStopsCount} earlier {hiddenStopsCount === 1 ? 'stop' : 'stops'} hidden
+                        </div>
+                    )}
+
                     {/* Vertical line for the route */}
                     <div className="absolute left-8 top-0 bottom-0 w-1 bg-neutral-700"></div>
 
-                    {tripData.stopTimes.map((stopTime, index) => {
+                    {visibleStops.map((stopTime, visibleIndex) => {
+                        // Get the actual index in the full array
+                        const index = tripData.stopTimes.indexOf(stopTime);
                         const isDeparted = position && index <= position.currentStopIndex;
                         const isNext = position && index === position.currentStopIndex + 1;
+                        const isCurrent = position && index === position.currentStopIndex;
                         const isActive = activeStation &&
                             (stopTime.stop.id === activeStation ||
                              stopTime.stop.id.replace(/[NS]$/, '') === activeStation.replace(/[NS]$/, ''));
 
+                        // Calculate if this is where we show the train between stops
+                        const showTrainBetweenStops = position &&
+                            index === position.currentStopIndex + 1 &&
+                            position.progress > 0 &&
+                            position.progress < 100;
+
                         return (
                             <div key={`${stopTime.stop.id}-${index}`} className="relative">
-                                {/* Progress bar between stops */}
-                                {position && index === position.currentStopIndex + 1 && position.progress > 0 && (
-                                    <div
-                                        className="absolute left-8 w-1 bg-gradient-to-b from-blue-500 to-neutral-700"
-                                        style={{
-                                            top: '-40px',
-                                            height: '40px',
-                                            background: `linear-gradient(to bottom, #3b82f6 ${position.progress}%, #404040 ${position.progress}%)`
-                                        }}
-                                    />
+                                {/* Progress bar and train indicator between stops */}
+                                {showTrainBetweenStops && (
+                                    <>
+                                        {/* Progress bar */}
+                                        <div
+                                            className="absolute left-8 w-1"
+                                            style={{
+                                                top: '-60px',
+                                                height: '60px',
+                                            }}
+                                        >
+                                            {/* Completed portion (blue) */}
+                                            <div
+                                                className="absolute top-0 left-0 w-full bg-blue-500"
+                                                style={{
+                                                    height: `${position.progress}%`
+                                                }}
+                                            />
+                                            {/* Remaining portion (gray) */}
+                                            <div
+                                                className="absolute left-0 w-full bg-neutral-700"
+                                                style={{
+                                                    top: `${position.progress}%`,
+                                                    height: `${100 - position.progress}%`
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Train position indicator - positioned on the progress */}
+                                        <div
+                                            className="absolute left-5 w-7 h-7 bg-blue-500 rounded-full border-2 border-white z-20"
+                                            style={{
+                                                top: `${-60 + (60 * position.progress / 100)}px`,
+                                            }}
+                                        >
+                                            <div className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-75"></div>
+                                        </div>
+                                    </>
                                 )}
 
-                                {/* Train position indicator */}
-                                {position && index === position.currentStopIndex && position.progress > 0 && position.progress < 100 && (
-                                    <div
-                                        className="absolute left-5 w-7 h-7 bg-blue-500 rounded-full border-2 border-white z-20 animate-pulse"
-                                        style={{
-                                            top: `${40 * (position.progress / 100)}px`,
-                                            transition: 'top 1s linear'
-                                        }}
-                                    >
-                                        <div className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-75"></div>
-                                    </div>
-                                )}
-
-                                <div className={`flex items-start mb-10 ${isActive ? 'bg-neutral-900 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
+                                <div className={`flex items-start ${visibleIndex === visibleStops.length - 1 ? '' : 'mb-16'} ${isActive ? 'bg-neutral-900 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
                                     {/* Stop indicator */}
                                     <div className={`relative z-10 w-5 h-5 mt-1 mr-4 rounded-full border-2 ${
                                         isDeparted ? 'bg-blue-500 border-blue-500' :
