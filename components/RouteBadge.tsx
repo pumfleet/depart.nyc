@@ -30,7 +30,7 @@ export default function RouteBadge({ routeId, color, size = 'default' }: RouteBa
     // Size variants
     const sizeClasses = size === 'small'
         ? 'w-6 h-6 text-sm'
-        : 'w-8 h-8 text-xl';
+        : 'w-7 h-7 text-lg';
 
     return (
         <div

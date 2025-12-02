@@ -111,7 +111,7 @@ export default function DepartureBoard({
 
                 return (
                     <div key={direction} className="mb-6">
-                        <h2 className="font-semibold mb-3 text-gray-300 uppercase tracking-wider text-sm border-b border-gray-700 pb-1">
+                        <h2 className="font-bold tracking-tight mb-3 text-neutral-100">
                             {direction}
                         </h2>
                         <ul className="space-y-2">
@@ -134,14 +134,14 @@ function TrainItem({ train, formatTime }: { train: StopTime, formatTime: (t: day
     const timeDisplay = formatTime(arrivalTime);
 
     return (
-        <li className="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
-            <div className="flex items-center space-x-4">
+        <li className="flex items-center justify-between bg-neutral-900 border-2 border-neutral-600 p-3">
+            <div className="flex items-center space-x-3">
                 <RouteBadge routeId={train.trip.route.id} color={train.trip.route.color} />
                 <div>
                     <div className="font-medium">{train.trip.destination.name}</div>
                 </div>
             </div>
-            <div className="text-lg font-bold text-yellow-400 font-mono">
+            <div className="text-lg font-bold text-neutral-300 font-mono">
                 {timeDisplay}
             </div>
         </li>

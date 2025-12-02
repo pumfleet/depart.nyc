@@ -77,7 +77,14 @@ export default function StationPage() {
 
     return (
         <div className="min-h-screen bg-black text-white">
-            <StationHeader name={stationData.name} />
+            <StationHeader
+                name={stationData.name}
+                routes={
+                    stationData.serviceMaps
+                        .find(sm => sm.configId === 'realtime')
+                        ?.routes.map(r => ({ id: r.id, color: r.color })) || []
+                }
+            />
             <Alerts alerts={alerts} />
             <DepartureBoard
                 stopTimes={stationData.stopTimes}
