@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import RouteBadge from '@/components/RouteBadge';
 import { fetchTrip } from '@/lib/api';
+import Link from 'next/link';
 
 interface TripStopTime {
     stop: {
@@ -172,7 +173,7 @@ export default function TripPage() {
 
     return (
         <div className="min-h-screen bg-black text-white">
-            <div className="sticky top-0 bg-black border-b border-neutral-800 p-4 z-10">
+            <div className="sticky flex top-0 bg-black border-b border-neutral-800 p-4 z-10">
                 <div className="flex items-center gap-3">
                     <RouteBadge routeId={tripData.route.id} color={tripData.route.color} />
                     <div>
@@ -183,6 +184,9 @@ export default function TripPage() {
                         </p>
                     </div>
                 </div>
+                <Link href={`/stations/${activeStation}`} className="ml-auto mt-2.5 mr-2 font-medium text-xl">
+                    &lt; Back
+                </Link>
             </div>
 
             <div className="p-4">
@@ -194,9 +198,6 @@ export default function TripPage() {
                         </div>
                     )}
 
-                    {/* Vertical line for the route */}
-                    <div className="absolute left-8 top-0 bottom-0 w-1 bg-neutral-700"></div>
-
                     {visibleStops.map((stopTime, visibleIndex) => {
                         // Get the actual index in the full array
                         const index = tripData.stopTimes.indexOf(stopTime);
@@ -205,7 +206,7 @@ export default function TripPage() {
                         const isCurrent = position && index === position.currentStopIndex;
                         const isActive = activeStation &&
                             (stopTime.stop.id === activeStation ||
-                             stopTime.stop.id.replace(/[NS]$/, '') === activeStation.replace(/[NS]$/, ''));
+                                stopTime.stop.id.replace(/[NS]$/, '') === activeStation.replace(/[NS]$/, ''));
 
                         // Calculate if this is where we show the train between stops
                         const showTrainBetweenStops = position &&
@@ -213,24 +214,41 @@ export default function TripPage() {
                             position.progress > 0 &&
                             position.progress < 100;
 
+                        // Determine if we need to show a connecting line before this stop
+                        const showConnectingLine = visibleIndex > 0;
+                        const isPreviousDeparted = position && (index - 1) <= position.currentStopIndex;
+
                         return (
                             <div key={`${stopTime.stop.id}-${index}`} className="relative">
+                                {/* Connecting line from previous stop (static, not animated) */}
+                                {showConnectingLine && !showTrainBetweenStops && (
+                                    <div
+                                        className="absolute left-2 w-1"
+                                        style={{
+                                            top: '-64px',
+                                            height: '68px',
+                                            backgroundColor: isPreviousDeparted ? `#${tripData.route.color}` : '#404040'
+                                        }}
+                                    />
+                                )}
+
                                 {/* Progress bar and train indicator between stops */}
                                 {showTrainBetweenStops && (
                                     <>
                                         {/* Progress bar */}
                                         <div
-                                            className="absolute left-8 w-1"
+                                            className="absolute left-2 w-1"
                                             style={{
-                                                top: '-60px',
-                                                height: '60px',
+                                                top: '-64px',
+                                                height: '64px',
                                             }}
                                         >
-                                            {/* Completed portion (blue) */}
+                                            {/* Completed portion (route color) */}
                                             <div
-                                                className="absolute top-0 left-0 w-full bg-blue-500"
+                                                className="absolute top-0 left-0 w-full"
                                                 style={{
-                                                    height: `${position.progress}%`
+                                                    height: `${position.progress}%`,
+                                                    backgroundColor: `#${tripData.route.color}`
                                                 }}
                                             />
                                             {/* Remaining portion (gray) */}
@@ -238,32 +256,48 @@ export default function TripPage() {
                                                 className="absolute left-0 w-full bg-neutral-700"
                                                 style={{
                                                     top: `${position.progress}%`,
-                                                    height: `${100 - position.progress}%`
+                                                    height: `${107 - position.progress}%`
                                                 }}
                                             />
                                         </div>
 
                                         {/* Train position indicator - positioned on the progress */}
                                         <div
-                                            className="absolute left-5 w-7 h-7 bg-blue-500 rounded-full border-2 border-white z-20"
+                                            className="absolute left-0.5 w-4 h-4 rounded-full border-2 border-white z-20"
                                             style={{
-                                                top: `${-60 + (60 * position.progress / 100)}px`,
+                                                top: `${-64 + (64 * position.progress / 100)}px`,
+                                                backgroundColor: `#${tripData.route.color}`
                                             }}
                                         >
-                                            <div className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-75"></div>
+                                            <div
+                                                className="absolute inset-0 rounded-full animate-ping opacity-75"
+                                                style={{ backgroundColor: `#${tripData.route.color}` }}
+                                            ></div>
                                         </div>
                                     </>
                                 )}
 
-                                <div className={`flex items-start ${visibleIndex === visibleStops.length - 1 ? '' : 'mb-16'} ${isActive ? 'bg-neutral-900 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
+                                <div className={`flex items-start ${visibleIndex === visibleStops.length - 1 ? '' : 'mb-8'} ${isActive ? '-mx-4 px-4' : ''}`}>
                                     {/* Stop indicator */}
-                                    <div className={`relative z-10 w-5 h-5 mt-1 mr-4 rounded-full border-2 ${
-                                        isDeparted ? 'bg-blue-500 border-blue-500' :
-                                        isNext ? 'bg-black border-yellow-500 animate-pulse' :
-                                        'bg-black border-neutral-600'
-                                    }`}>
+                                    <div
+                                        className={`relative z-10 w-5 h-5 mt-1 mr-4 rounded-full border-2 ${isActive ? 'border-orange-500' :
+                                            isNext ? 'bg-black animate-pulse' :
+                                                !isDeparted ? 'bg-black border-neutral-600' : ''
+                                            }`}
+                                        style={
+                                            isActive ? {
+                                                backgroundColor: isDeparted ? `#${tripData.route.color}` : 'black'
+                                            } :
+                                                isDeparted ? {
+                                                    backgroundColor: `#${tripData.route.color}`,
+                                                    borderColor: `#${tripData.route.color}`
+                                                } :
+                                                    isNext ? {
+                                                        borderColor: `#${tripData.route.color}`
+                                                    } : {}
+                                        }>
                                         {isActive && (
-                                            <div className="absolute -top-1 -left-1 -right-1 -bottom-1 border-2 border-white rounded-full"></div>
+                                            <div className="absolute -top-1 -left-1 -right-1 -bottom-1 rounded-full"></div>
                                         )}
                                     </div>
 
@@ -271,9 +305,8 @@ export default function TripPage() {
                                     <div className="flex-1">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <h3 className={`font-semibold ${isActive ? 'text-yellow-400' : 'text-white'}`}>
+                                                <h3 className={`font-semibold ${isActive ? 'text-orange-500' : 'text-white'}`}>
                                                     {stopTime.stop.name}
-                                                    {isActive && <span className="ml-2 text-xs bg-yellow-600 px-2 py-1 rounded">Your Station</span>}
                                                 </h3>
                                                 <div className="flex gap-4 mt-1 text-sm text-neutral-400">
                                                     <span>Track {stopTime.track}</span>
@@ -293,7 +326,7 @@ export default function TripPage() {
                                                     <span className="text-sm text-neutral-500">Departed</span>
                                                 ) : (
                                                     <div>
-                                                        <div className="text-lg font-mono font-bold text-yellow-400">
+                                                        <div className="text-lg font-mono font-bold text-neutral-300">
                                                             {formatCountdown(stopTime.arrival.time)}
                                                         </div>
                                                         <div className="text-xs text-neutral-500">until arrival</div>
