@@ -18,6 +18,9 @@ export default function StationPage() {
     useEffect(() => {
         if (!id) return;
 
+        // Store active station in localStorage
+        localStorage.setItem('activeStation', id as string);
+
         const fetchData = async () => {
             try {
                 const [station, allRoutes] = await Promise.all([

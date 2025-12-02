@@ -26,3 +26,18 @@ export async function fetchAlert(id: string): Promise<Alert> {
     }
     return response.json();
 }
+
+export async function fetchTrip(tripId: string): Promise<any> {
+    // Extract route from trip ID (format: 003800_E..N05R)
+    const routeMatch = tripId.match(/_([A-Z0-9]+)\.\./);
+    if (!routeMatch) {
+        throw new Error('Invalid trip ID format');
+    }
+    const routeId = routeMatch[1];
+
+    const response = await fetch(`${API_BASE_URL}/routes/${routeId}/trips/${tripId}`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch trip data: ${response.statusText}`);
+    }
+    return response.json();
+}
