@@ -8,7 +8,8 @@ export async function GET(
 ) {
     const { path } = await params;
     const pathString = path.join('/');
-    const url = `${TRANSITER_BASE_URL}/${pathString}`;
+    const searchParams = request.nextUrl.searchParams.toString();
+    const url = `${TRANSITER_BASE_URL}/${pathString}${searchParams ? `?${searchParams}` : ''}`;
 
     try {
         const response = await fetch(url);

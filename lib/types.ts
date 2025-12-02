@@ -12,6 +12,7 @@ export interface Route {
     resource: Resource;
     system: System;
     color: string;
+    alerts: { id: string }[];
 }
 
 export interface Stop {
@@ -86,4 +87,25 @@ export interface StationResponse {
     stopTimes: StopTime[];
     transfers: any[];
     headsignRules: HeadsignRule[];
+}
+
+export interface AlertHeader {
+    text: string;
+    language: string;
+}
+
+export interface AlertDescription {
+    text: string;
+    language: string;
+}
+
+export interface Alert {
+    id: string;
+    resource: Resource | null;
+    system: System | null;
+    cause: string;
+    effect: string;
+    header: AlertHeader[];
+    description: AlertDescription[];
+    url: any[];
 }
