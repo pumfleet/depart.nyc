@@ -101,28 +101,30 @@ export default function DepartureBoard({
 
     return (
         <div className="p-4 text-white grid lg:grid-cols-2 lg:gap-8">
-            {Object.entries(groupedTrains).map(([direction, trains]) => {
-                // Sort and limit per group
-                const sortedTrains = [...trains].sort((a, b) =>
-                    parseInt(a.arrival.time) - parseInt(b.arrival.time)
-                );
-                const displayedTrains = limit ? sortedTrains.slice(0, limit) : sortedTrains;
+            {Object.entries(groupedTrains)
+                .sort(([dirA], [dirB]) => dirA.localeCompare(dirB))
+                .map(([direction, trains]) => {
+                    // Sort and limit per group
+                    const sortedTrains = [...trains].sort((a, b) =>
+                        parseInt(a.arrival.time) - parseInt(b.arrival.time)
+                    );
+                    const displayedTrains = limit ? sortedTrains.slice(0, limit) : sortedTrains;
 
-                if (displayedTrains.length === 0) return null;
+                    if (displayedTrains.length === 0) return null;
 
-                return (
-                    <div key={direction} className="mb-6">
-                        <h2 className="font-bold tracking-tight mb-3 text-neutral-100">
-                            {direction}
-                        </h2>
-                        <ul className="space-y-2">
-                            {displayedTrains.map((train) => (
-                                <TrainItem key={train.trip.id} train={train} formatTime={formatTime} />
-                            ))}
-                        </ul>
-                    </div>
-                );
-            })}
+                    return (
+                        <div key={direction} className="mb-6">
+                            <h2 className="font-bold tracking-tight mb-3 text-neutral-100">
+                                {direction}
+                            </h2>
+                            <ul className="space-y-2">
+                                {displayedTrains.map((train) => (
+                                    <TrainItem key={train.trip.id} train={train} formatTime={formatTime} />
+                                ))}
+                            </ul>
+                        </div>
+                    );
+                })}
             {upcomingTrains.length === 0 && (
                 <div className="text-center text-gray-500 mt-8">No upcoming trains</div>
             )}

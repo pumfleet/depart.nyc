@@ -85,7 +85,8 @@ export default function StationPage() {
                 routes={
                     stationData.serviceMaps
                         .find(sm => sm.configId === 'realtime')
-                        ?.routes.map(r => ({ id: r.id, color: r.color })) || []
+                        ?.routes.map(r => ({ id: r.id, color: r.color }))
+                        .sort((a, b) => a.id.localeCompare(b.id)) || []
                 }
             />
             <Alerts alerts={alerts} />
