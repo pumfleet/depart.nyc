@@ -21,6 +21,7 @@ export default function TripPage() {
     const [transferModal, setTransferModal] = useState<{
         isOpen: boolean;
         stationName: string;
+        stopId: string;
         arrivalTime: number;
     } | null>(null);
 
@@ -65,10 +66,11 @@ export default function TripPage() {
         return () => clearInterval(timer);
     }, []);
 
-    const handleTransferClick = (stationName: string, arrivalTime: number) => {
+    const handleTransferClick = (stationName: string, stopId: string, arrivalTime: number) => {
         setTransferModal({
             isOpen: true,
             stationName,
+            stopId,
             arrivalTime
         });
     };
@@ -122,6 +124,7 @@ export default function TripPage() {
                     isOpen={transferModal.isOpen}
                     onClose={handleCloseModal}
                     stationName={transferModal.stationName}
+                    stopId={transferModal.stopId}
                     currentRouteId={tripData.route.id}
                     currentTripId={tripData.id}
                     arrivalTime={transferModal.arrivalTime}

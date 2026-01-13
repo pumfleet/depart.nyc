@@ -13,13 +13,41 @@ export interface TransferOption {
     color: string;
 }
 
-// Build a map for efficient lookups
+// Build maps for efficient lookups
 const stationsByName = new Map<string, Station[]>();
+const stationsById = new Map<string, Station>();
+
 (stationsData as Station[]).forEach(station => {
+    // Map by name
     const existing = stationsByName.get(station.name) || [];
     existing.push(station);
     stationsByName.set(station.name, existing);
+
+    // Map by ID
+    stationsById.set(station.id, station);
 });
+
+/**
+ * Get a station by its ID
+ */
+export function getStationById(id: string): Station | null {
+    // Try exact match first
+    const exact = stationsById.get(id);
+    if (exact) return exact;
+
+    // Strip N/S suffix and try again (Transiter API uses suffixes for direction)
+    const baseId = id.replace(/[NS]$/, '');
+    return stationsById.get(baseId) || null;
+}
+
+/**
+ * Get the canonical station name from a stop ID
+ * This handles the N/S suffix that Transiter API uses
+ */
+export function getCanonicalStationName(stopId: string): string | null {
+    const station = getStationById(stopId);
+    return station?.name || null;
+}
 
 /**
  * Find all stations with a matching name
@@ -43,6 +71,7 @@ export function getStationIdForLine(name: string, line: string): string | null {
 
 /**
  * Get available transfer lines at a station, excluding specified lines
+ * This finds all stations with the same name and returns their lines
  */
 export function getTransferLines(stationName: string, excludeLines: string[]): TransferOption[] {
     const matchingStations = getStationsByName(stationName);
@@ -66,8 +95,27 @@ export function getTransferLines(stationName: string, excludeLines: string[]): T
 }
 
 /**
+ * Get transfer lines using a stop ID instead of station name
+ * This is more reliable as it handles API stop IDs with N/S suffixes
+ */
+export function getTransferLinesFromStopId(stopId: string, excludeLines: string[]): TransferOption[] {
+    const canonicalName = getCanonicalStationName(stopId);
+    if (!canonicalName) {
+        return [];
+    }
+    return getTransferLines(canonicalName, excludeLines);
+}
+
+/**
  * Check if a station has transfer options (excluding current line)
  */
 export function hasTransfers(stationName: string, currentLine: string): boolean {
     return getTransferLines(stationName, [currentLine]).length > 0;
+}
+
+/**
+ * Check if a stop has transfer options using its ID
+ */
+export function hasTransfersFromStopId(stopId: string, currentLine: string): boolean {
+    return getTransferLinesFromStopId(stopId, [currentLine]).length > 0;
 }

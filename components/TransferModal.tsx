@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { X, Loader2, ChevronRight } from 'lucide-react';
 import dayjs from 'dayjs';
 import RouteBadge from '@/components/RouteBadge';
-import { getTransferLines, TransferOption } from '@/lib/station-lookup';
+import { getTransferLinesFromStopId, TransferOption } from '@/lib/station-lookup';
 import { fetchStation } from '@/lib/api';
 import { StopTime } from '@/lib/types';
 
@@ -13,6 +13,7 @@ interface TransferModalProps {
     isOpen: boolean;
     onClose: () => void;
     stationName: string;
+    stopId: string;
     currentRouteId: string;
     currentTripId: string;
     arrivalTime: number;
@@ -27,6 +28,7 @@ export default function TransferModal({
     isOpen,
     onClose,
     stationName,
+    stopId,
     currentRouteId,
     currentTripId,
     arrivalTime
@@ -41,8 +43,8 @@ export default function TransferModal({
         const loadTransferOptions = async () => {
             setLoading(true);
 
-            // Get all transfer lines at this station
-            const lines = getTransferLines(stationName, [currentRouteId]);
+            // Get all transfer lines at this station using the stop ID for reliable lookup
+            const lines = getTransferLinesFromStopId(stopId, [currentRouteId]);
 
             // Initialize with loading state
             const optionsWithLoading: TransferLineWithDeparture[] = lines.map(line => ({
@@ -89,7 +91,7 @@ export default function TransferModal({
         };
 
         loadTransferOptions();
-    }, [isOpen, stationName, currentRouteId, arrivalTime]);
+    }, [isOpen, stopId, currentRouteId, arrivalTime]);
 
     const handleSelectTransfer = (option: TransferLineWithDeparture) => {
         if (!option.nextDeparture) return;

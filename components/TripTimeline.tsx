@@ -4,7 +4,7 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { ArrowRightLeft } from 'lucide-react';
 import { getCurrentPosition, TripStopTime } from '@/lib/transfer-utils';
-import { hasTransfers } from '@/lib/station-lookup';
+import { hasTransfersFromStopId, getCanonicalStationName } from '@/lib/station-lookup';
 
 export interface TripData {
     id: string;
@@ -25,7 +25,7 @@ interface TripTimelineProps {
     highlightStation?: string;
     compact?: boolean;
     showTransferIcons?: boolean;
-    onTransferClick?: (stationName: string, arrivalTime: number) => void;
+    onTransferClick?: (stationName: string, stopId: string, arrivalTime: number) => void;
 }
 
 export default function TripTimeline({
@@ -96,10 +96,13 @@ export default function TripTimeline({
                 const showConnectingLine = visibleIndex > 0;
                 const isPreviousDeparted = position && (index - 1) <= position.currentStopIndex;
 
-                // Check if this station has transfer options
+                // Check if this station has transfer options (use stop ID for reliable lookup)
                 const showTransfer = showTransferIcons &&
                     !isDeparted &&
-                    hasTransfers(stopTime.stop.name, tripData.route.id);
+                    hasTransfersFromStopId(stopTime.stop.id, tripData.route.id);
+
+                // Get the canonical station name from our data
+                const canonicalName = getCanonicalStationName(stopTime.stop.id) || stopTime.stop.name;
 
                 return (
                     <div key={`${stopTime.stop.id}-${index}`} className="relative">
@@ -198,7 +201,8 @@ export default function TripTimeline({
                                             {showTransfer && (
                                                 <button
                                                     onClick={() => onTransferClick?.(
-                                                        stopTime.stop.name,
+                                                        canonicalName,
+                                                        stopTime.stop.id,
                                                         parseInt(stopTime.arrival.time)
                                                     )}
                                                     className="flex-shrink-0 p-1 text-neutral-400 hover:text-orange-500 hover:bg-neutral-800 rounded transition-colors"
