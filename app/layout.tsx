@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import ToastProvider from "@/components/ToastProvider";
+import SWRProvider from "@/lib/swr-provider";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -37,8 +38,10 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${dmMono.variable} antialiased`}
       >
-        <ToastProvider />
-        {children}
+        <SWRProvider>
+          <ToastProvider />
+          {children}
+        </SWRProvider>
       </body>
     </html>
   );

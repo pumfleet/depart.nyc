@@ -4,19 +4,18 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import RouteBadge from '@/components/RouteBadge';
-import TripTimeline, { TripData } from '@/components/TripTimeline';
+import TripTimeline from '@/components/TripTimeline';
 import TransferModal from '@/components/TransferModal';
-import { fetchTrip } from '@/lib/api';
+import OfflineIndicator from '@/components/OfflineIndicator';
+import { useTrip } from '@/lib/hooks/useTrip';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
 export default function TripPage() {
     const { id } = useParams();
-    const [tripData, setTripData] = useState<TripData | null>(null);
+    const { trip, isLoading, error } = useTrip(id as string);
     const [activeStation, setActiveStation] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(dayjs());
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
     // Transfer modal state
     const [transferModal, setTransferModal] = useState<{
@@ -33,31 +32,6 @@ export default function TripPage() {
             setActiveStation(station);
         }
     }, []);
-
-    useEffect(() => {
-        if (!id) return;
-
-        const fetchData = async () => {
-            try {
-                const data = await fetchTrip(id as string);
-                setTripData(data);
-                setError(null);
-            } catch (err) {
-                console.error(err);
-                setError('Failed to fetch trip data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        // Initial fetch
-        fetchData();
-
-        // Poll every 5 seconds
-        const intervalId = setInterval(fetchData, 5000);
-
-        return () => clearInterval(intervalId);
-    }, [id]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -80,31 +54,32 @@ export default function TripPage() {
         setTransferModal(null);
     };
 
-    if (loading) {
+    if (isLoading && !trip) {
         return <div className="p-4 text-white">Loading...</div>;
     }
 
-    if (error) {
-        return <div className="p-4 text-red-500">{error}</div>;
+    if (error && !trip) {
+        return <div className="p-4 text-red-500">Failed to fetch trip data</div>;
     }
 
-    if (!tripData) {
+    if (!trip) {
         return <div className="p-4 text-white">Trip not found</div>;
     }
 
     return (
         <div className="min-h-screen bg-black text-white">
+            <OfflineIndicator />
             <div className="sticky flex top-0 bg-black border-b-2 border-neutral-800 p-4 z-50">
                 <div className="flex items-center">
                     <Link href={"/stations/" + activeStation} className="flex items-center justify-center w-8 h-8 text-neutral-400 hover:text-white">
                         <ChevronLeft className="w-8 h-8 -ml-4" />
                     </Link>
-                    <RouteBadge routeId={tripData.route.id} color={tripData.route.color} />
+                    <RouteBadge routeId={trip.route.id} color={trip.route.color} />
                     <div className="ml-4">
-                        <h1 className="text-xl font-bold">Trip {tripData.id.split('_')[0]}</h1>
+                        <h1 className="text-xl font-bold">Trip {trip.id.split('_')[0]}</h1>
                         <p className="text-sm text-neutral-400">
-                            {tripData.stopTimes.length > 0 &&
-                                `To ${tripData.stopTimes[tripData.stopTimes.length - 1].stop.name}`}
+                            {trip.stopTimes.length > 0 &&
+                                `To ${trip.stopTimes[trip.stopTimes.length - 1].stop.name}`}
                         </p>
                     </div>
                 </div>
@@ -112,7 +87,7 @@ export default function TripPage() {
 
             <div className="p-4">
                 <TripTimeline
-                    tripData={tripData}
+                    tripData={trip}
                     currentTime={currentTime}
                     activeStation={activeStation}
                     showTransferIcons={true}
@@ -126,8 +101,8 @@ export default function TripPage() {
                     onClose={handleCloseModal}
                     stationName={transferModal.stationName}
                     stopId={transferModal.stopId}
-                    currentRouteId={tripData.route.id}
-                    currentTripId={tripData.id}
+                    currentRouteId={trip.route.id}
+                    currentTripId={trip.id}
                     arrivalTime={transferModal.arrivalTime}
                 />
             )}
