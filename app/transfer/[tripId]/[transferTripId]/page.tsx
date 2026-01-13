@@ -21,7 +21,9 @@ export default function TransferPage() {
 
     const tripId = params.tripId as string;
     const transferTripId = params.transferTripId as string;
-    const transferStation = searchParams.get('station') || '';
+    // Support both old format (station) and new format (arrivalStation/departureStation)
+    const arrivalStation = searchParams.get('arrivalStation') || searchParams.get('station') || '';
+    const departureStation = searchParams.get('departureStation') || searchParams.get('station') || '';
 
     const [currentTrip, setCurrentTrip] = useState<TripData | null>(null);
     const [transferTrip, setTransferTrip] = useState<TripData | null>(null);
@@ -35,16 +37,16 @@ export default function TransferPage() {
     // Find arrival time at transfer station for current trip
     const getArrivalTime = useCallback((): number | null => {
         if (!currentTrip) return null;
-        const stop = currentTrip.stopTimes.find(st => st.stop.name === transferStation);
+        const stop = currentTrip.stopTimes.find(st => st.stop.name === arrivalStation);
         return stop ? parseInt(stop.arrival.time) : null;
-    }, [currentTrip, transferStation]);
+    }, [currentTrip, arrivalStation]);
 
     // Find departure time from transfer station for transfer trip
     const getDepartureTime = useCallback((): number | null => {
         if (!transferTrip) return null;
-        const stop = transferTrip.stopTimes.find(st => st.stop.name === transferStation);
+        const stop = transferTrip.stopTimes.find(st => st.stop.name === departureStation);
         return stop ? parseInt(stop.departure?.time || stop.arrival.time) : null;
-    }, [transferTrip, transferStation]);
+    }, [transferTrip, departureStation]);
 
     // Fetch trip data
     useEffect(() => {
@@ -87,27 +89,27 @@ export default function TransferPage() {
 
     // Check if we've arrived at the transfer station
     useEffect(() => {
-        if (!currentTrip || !transferStation) return;
+        if (!currentTrip || !arrivalStation) return;
 
         const position = getCurrentPosition(currentTrip.stopTimes, currentTime.unix());
         if (!position) return;
 
-        // Find the transfer station index
+        // Find the transfer station index (using arrival station name from current trip)
         const transferStopIndex = currentTrip.stopTimes.findIndex(
-            st => st.stop.name === transferStation
+            st => st.stop.name === arrivalStation
         );
 
         // If we've passed or are at the transfer station, redirect to station page
         if (transferStopIndex !== -1 && position.currentStopIndex >= transferStopIndex) {
-            // Get the station ID for the transfer line
-            const stationId = getStationIdForLine(transferStation, transferTrip?.route.id || '');
+            // Get the station ID for the transfer line (using departure station name)
+            const stationId = getStationIdForLine(departureStation, transferTrip?.route.id || '');
             if (stationId) {
                 // Store the active station for navigation
                 localStorage.setItem('activeStation', stationId);
                 router.push(`/stations/${stationId}`);
             }
         }
-    }, [currentTrip, transferTrip, transferStation, currentTime, router]);
+    }, [currentTrip, transferTrip, arrivalStation, departureStation, currentTime, router]);
 
     // Handle transfer missed - find next train
     const handleTransferMissed = useCallback(async () => {
@@ -121,7 +123,7 @@ export default function TransferPage() {
         }
 
         const transferRouteId = transferTrip.route.id;
-        const stationId = getStationIdForLine(transferStation, transferRouteId);
+        const stationId = getStationIdForLine(departureStation, transferRouteId);
 
         if (!stationId) {
             isUpdatingTransfer.current = false;
@@ -149,8 +151,12 @@ export default function TransferPage() {
 
                 showTransferUpdatedToast(transferRouteId, newTime);
 
-                // Navigate to the new transfer
-                router.replace(`/transfer/${tripId}/${nextTrain.trip.id}?station=${encodeURIComponent(transferStation)}`);
+                // Navigate to the new transfer (keep same station names)
+                const params = new URLSearchParams({
+                    arrivalStation,
+                    departureStation
+                });
+                router.replace(`/transfer/${tripId}/${nextTrain.trip.id}?${params.toString()}`);
             } else {
                 showNoMoreTrainsToast(transferRouteId);
             }
@@ -159,7 +165,7 @@ export default function TransferPage() {
         } finally {
             isUpdatingTransfer.current = false;
         }
-    }, [transferTrip, currentTrip, transferStation, tripId, transferTripId, router, getArrivalTime]);
+    }, [transferTrip, currentTrip, arrivalStation, departureStation, tripId, transferTripId, router, getArrivalTime]);
 
     // Handle tight connection warning
     const handleTightConnection = useCallback(() => {
@@ -213,7 +219,7 @@ export default function TransferPage() {
                     </Link>
                     <div className="text-center">
                         <h1 className="text-lg font-semibold">Transfer</h1>
-                        <p className="text-sm text-orange-500">{transferStation}</p>
+                        <p className="text-sm text-orange-500">{arrivalStation}</p>
                     </div>
                     <div className="w-16" /> {/* Spacer for centering */}
                 </div>
@@ -250,7 +256,7 @@ export default function TransferPage() {
                         <TripTimeline
                             tripData={currentTrip}
                             currentTime={currentTime}
-                            highlightStation={transferStation}
+                            highlightStation={arrivalStation}
                             compact={true}
                         />
                     </div>
@@ -272,7 +278,7 @@ export default function TransferPage() {
                         <TripTimeline
                             tripData={transferTrip}
                             currentTime={currentTime}
-                            highlightStation={transferStation}
+                            highlightStation={departureStation}
                             compact={true}
                         />
                     </div>

@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { X, Loader2, ChevronRight } from 'lucide-react';
 import dayjs from 'dayjs';
 import RouteBadge from '@/components/RouteBadge';
-import { getTransferLinesFromStopId, TransferOption } from '@/lib/station-lookup';
 import { fetchStation } from '@/lib/api';
-import { StopTime } from '@/lib/types';
+import { StopTime, StationResponse, Transfer } from '@/lib/types';
+import { getLineColor } from '@/lib/colors';
 
 interface TransferModalProps {
     isOpen: boolean;
@@ -19,7 +19,11 @@ interface TransferModalProps {
     arrivalTime: number;
 }
 
-interface TransferLineWithDeparture extends TransferOption {
+interface TransferLineOption {
+    line: string;
+    stationId: string;
+    stationName: string;
+    color: string;
     nextDeparture: StopTime | null;
     loading: boolean;
 }
@@ -34,7 +38,7 @@ export default function TransferModal({
     arrivalTime
 }: TransferModalProps) {
     const router = useRouter();
-    const [transferOptions, setTransferOptions] = useState<TransferLineWithDeparture[]>([]);
+    const [transferOptions, setTransferOptions] = useState<TransferLineOption[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -43,61 +47,117 @@ export default function TransferModal({
         const loadTransferOptions = async () => {
             setLoading(true);
 
-            // Get all transfer lines at this station using the stop ID for reliable lookup
-            const lines = getTransferLinesFromStopId(stopId, [currentRouteId]);
+            try {
+                // Strip N/S suffix to get base station ID
+                const baseStopId = stopId.replace(/[NS]$/, '');
 
-            // Initialize with loading state
-            const optionsWithLoading: TransferLineWithDeparture[] = lines.map(line => ({
-                ...line,
-                nextDeparture: null,
-                loading: true
-            }));
-            setTransferOptions(optionsWithLoading);
-            setLoading(false);
+                // Fetch the current station to get its transfers
+                const stationData: StationResponse = await fetchStation(baseStopId);
 
-            // Fetch station data for each transfer option
-            const updatedOptions = await Promise.all(
-                lines.map(async (line) => {
+                // Collect all station IDs to check for transfers
+                // 1. The current station itself (for lines at this platform)
+                // 2. All connected transfer stations from the API
+                const stationIds = new Set<string>();
+                stationIds.add(baseStopId);
+
+                // Add transfer stations from the API
+                if (stationData.transfers) {
+                    stationData.transfers.forEach((transfer: Transfer) => {
+                        if (transfer.toStop?.id) {
+                            // Strip N/S suffix from transfer station IDs too
+                            const transferId = transfer.toStop.id.replace(/[NS]$/, '');
+                            stationIds.add(transferId);
+                        }
+                    });
+                }
+
+                // Fetch all connected stations in parallel
+                const stationPromises = Array.from(stationIds).map(async (stationId) => {
                     try {
-                        const stationData = await fetchStation(line.stationId);
-
-                        // Find the next departure on this line after our arrival time
-                        const nextDeparture = stationData.stopTimes
-                            .filter((st: StopTime) => {
-                                const depTime = parseInt(st.departure?.time || st.arrival.time);
-                                return st.trip.route.id === line.line && depTime > arrivalTime;
-                            })
-                            .sort((a: StopTime, b: StopTime) =>
-                                parseInt(a.arrival.time) - parseInt(b.arrival.time)
-                            )[0] || null;
-
-                        return {
-                            ...line,
-                            nextDeparture,
-                            loading: false
-                        };
+                        const data = await fetchStation(stationId);
+                        return { stationId, data };
                     } catch (error) {
-                        console.error(`Failed to fetch station ${line.stationId}:`, error);
-                        return {
-                            ...line,
-                            nextDeparture: null,
-                            loading: false
-                        };
+                        console.error(`Failed to fetch station ${stationId}:`, error);
+                        return null;
                     }
-                })
-            );
+                });
 
-            setTransferOptions(updatedOptions);
+                const stationResults = await Promise.all(stationPromises);
+
+                // Collect all available lines from all stations
+                const lineMap = new Map<string, { stationId: string; stationName: string; departures: StopTime[] }>();
+
+                stationResults.forEach((result) => {
+                    if (!result?.data) return;
+
+                    const { stationId, data } = result;
+
+                    // Get all lines from service maps
+                    data.serviceMaps?.forEach((serviceMap) => {
+                        serviceMap.routes?.forEach((route) => {
+                            // Skip the current line
+                            if (route.id === currentRouteId) return;
+
+                            // Find departures for this line
+                            const departures = data.stopTimes.filter((st: StopTime) => {
+                                const depTime = parseInt(st.departure?.time || st.arrival.time);
+                                return st.trip.route.id === route.id && depTime > arrivalTime;
+                            });
+
+                            // Only add if we have departures, or update if this station has more
+                            const existing = lineMap.get(route.id);
+                            if (!existing || departures.length > existing.departures.length) {
+                                lineMap.set(route.id, {
+                                    stationId,
+                                    stationName: data.name,
+                                    departures
+                                });
+                            }
+                        });
+                    });
+                });
+
+                // Convert to options array
+                const options: TransferLineOption[] = Array.from(lineMap.entries()).map(([line, info]) => {
+                    const sortedDepartures = info.departures.sort((a, b) =>
+                        parseInt(a.arrival.time) - parseInt(b.arrival.time)
+                    );
+
+                    return {
+                        line,
+                        stationId: info.stationId,
+                        stationName: info.stationName,
+                        color: getLineColor(line),
+                        nextDeparture: sortedDepartures[0] || null,
+                        loading: false
+                    };
+                });
+
+                // Sort by line ID for consistent ordering
+                options.sort((a, b) => a.line.localeCompare(b.line));
+
+                setTransferOptions(options);
+            } catch (error) {
+                console.error('Failed to load transfer options:', error);
+                setTransferOptions([]);
+            } finally {
+                setLoading(false);
+            }
         };
 
         loadTransferOptions();
     }, [isOpen, stopId, currentRouteId, arrivalTime]);
 
-    const handleSelectTransfer = (option: TransferLineWithDeparture) => {
+    const handleSelectTransfer = (option: TransferLineOption) => {
         if (!option.nextDeparture) return;
 
         const transferTripId = option.nextDeparture.trip.id;
-        router.push(`/transfer/${currentTripId}/${transferTripId}?station=${encodeURIComponent(stationName)}`);
+        // Pass both station names - arrival (on current trip) and departure (on transfer trip)
+        const params = new URLSearchParams({
+            arrivalStation: stationName,
+            departureStation: option.stationName
+        });
+        router.push(`/transfer/${currentTripId}/${transferTripId}?${params.toString()}`);
         onClose();
     };
 
@@ -160,7 +220,7 @@ export default function TransferModal({
                                 <button
                                     key={option.line}
                                     onClick={() => handleSelectTransfer(option)}
-                                    disabled={option.loading || !option.nextDeparture}
+                                    disabled={!option.nextDeparture}
                                     className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
                                         option.nextDeparture
                                             ? 'bg-neutral-800 hover:bg-neutral-700'
@@ -174,12 +234,7 @@ export default function TransferModal({
                                     />
 
                                     <div className="flex-1 text-left">
-                                        {option.loading ? (
-                                            <div className="flex items-center gap-2 text-neutral-400">
-                                                <Loader2 className="animate-spin" size={14} />
-                                                <span className="text-sm">Loading...</span>
-                                            </div>
-                                        ) : option.nextDeparture ? (
+                                        {option.nextDeparture ? (
                                             <>
                                                 <div className="text-white text-sm font-medium">
                                                     {option.nextDeparture.headsign || 'Unknown destination'}
