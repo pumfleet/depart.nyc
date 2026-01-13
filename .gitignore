@@ -15,6 +15,7 @@
 
 # ai
 .claude/
+tmpclaude*
 
 # next.js
 /.next/

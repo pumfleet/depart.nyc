@@ -73,6 +73,11 @@ export interface HeadsignRule {
     headsign: string;
 }
 
+export interface Transfer {
+    fromStop: Stop;
+    toStop: Stop;
+}
+
 export interface StationResponse {
     id: string;
     resource: Resource | null;
@@ -85,7 +90,7 @@ export interface StationResponse {
     serviceMaps: ServiceMap[];
     alerts: any[];
     stopTimes: StopTime[];
-    transfers: any[];
+    transfers: Transfer[];
     headsignRules: HeadsignRule[];
 }
 
