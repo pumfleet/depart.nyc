@@ -108,7 +108,7 @@ export default function TransferWindow({
     };
 
     return (
-        <div className={`rounded-lg border p-4 ${getStatusBgColor(result.status)}`}>
+        <div className={`border-2 p-4 ${getStatusBgColor(result.status)}`}>
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     {getStatusIcon(result.status)}

@@ -1,7 +1,7 @@
 'use client';
 
 import toast from 'react-hot-toast';
-import { AlertTriangle, RefreshCw, Clock, MapPin } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Clock, MapPin, Check } from 'lucide-react';
 
 /**
  * Show a toast when the transfer train has been updated to the next available
@@ -11,7 +11,7 @@ export function showTransferUpdatedToast(routeId: string, newTime: string): void
         <div
             className={`${
                 t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-md w-full bg-neutral-900 shadow-lg rounded-lg pointer-events-auto flex border border-neutral-700`}
+            } w-screen bg-neutral-900 pointer-events-auto flex border-b-2 border-neutral-700`}
         >
             <div className="flex-1 p-4">
                 <div className="flex items-start">
@@ -28,12 +28,12 @@ export function showTransferUpdatedToast(routeId: string, newTime: string): void
                     </div>
                 </div>
             </div>
-            <div className="flex border-l border-neutral-700">
+            <div className="flex border-l-2 border-neutral-700">
                 <button
                     onClick={() => toast.dismiss(t.id)}
-                    className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-orange-500 hover:text-orange-400 focus:outline-none"
+                    className="w-full border-2 border-transparent p-4 flex items-center justify-center text-sm font-medium text-orange-500 hover:text-orange-400 focus:outline-none"
                 >
-                    OK
+                    <Check className="h-5 w-5" />
                 </button>
             </div>
         </div>
@@ -51,7 +51,7 @@ export function showTightConnectionToast(minutes: number): void {
         <div
             className={`${
                 t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-md w-full bg-neutral-900 shadow-lg rounded-lg pointer-events-auto flex border border-orange-500/50`}
+            } w-screen bg-neutral-900 pointer-events-auto flex border-b-2 border-orange-500/50`}
         >
             <div className="flex-1 p-4">
                 <div className="flex items-start">
@@ -68,12 +68,12 @@ export function showTightConnectionToast(minutes: number): void {
                     </div>
                 </div>
             </div>
-            <div className="flex border-l border-neutral-700">
+            <div className="flex border-l-2 border-neutral-700">
                 <button
                     onClick={() => toast.dismiss(t.id)}
-                    className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-neutral-400 hover:text-white focus:outline-none"
+                    className="w-full border-2 border-transparent p-4 flex items-center justify-center text-sm font-medium text-neutral-400 hover:text-white focus:outline-none"
                 >
-                    OK
+                    <Check className="h-5 w-5" />
                 </button>
             </div>
         </div>
@@ -91,7 +91,7 @@ export function showNoMoreTrainsToast(routeId: string): void {
         <div
             className={`${
                 t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-md w-full bg-neutral-900 shadow-lg rounded-lg pointer-events-auto flex border border-red-500/50`}
+            } w-screen bg-neutral-900 pointer-events-auto flex border-b-2 border-red-500/50`}
         >
             <div className="flex-1 p-4">
                 <div className="flex items-start">
@@ -108,12 +108,12 @@ export function showNoMoreTrainsToast(routeId: string): void {
                     </div>
                 </div>
             </div>
-            <div className="flex border-l border-neutral-700">
+            <div className="flex border-l-2 border-neutral-700">
                 <button
                     onClick={() => toast.dismiss(t.id)}
-                    className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-neutral-400 hover:text-white focus:outline-none"
+                    className="w-full border-2 border-transparent p-4 flex items-center justify-center text-sm font-medium text-neutral-400 hover:text-white focus:outline-none"
                 >
-                    OK
+                    <Check className="h-5 w-5" />
                 </button>
             </div>
         </div>
@@ -131,7 +131,7 @@ export function showArrivedAtStationToast(stationName: string, routeId: string):
         <div
             className={`${
                 t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-md w-full bg-neutral-900 shadow-lg rounded-lg pointer-events-auto flex border border-green-500/50`}
+            } w-screen bg-neutral-900 pointer-events-auto flex border-b-2 border-green-500/50`}
         >
             <div className="flex-1 p-4">
                 <div className="flex items-start">
@@ -148,12 +148,12 @@ export function showArrivedAtStationToast(stationName: string, routeId: string):
                     </div>
                 </div>
             </div>
-            <div className="flex border-l border-neutral-700">
+            <div className="flex border-l-2 border-neutral-700">
                 <button
                     onClick={() => toast.dismiss(t.id)}
-                    className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-neutral-400 hover:text-white focus:outline-none"
+                    className="w-full border-2 border-transparent p-4 flex items-center justify-center text-sm font-medium text-neutral-400 hover:text-white focus:outline-none"
                 >
-                    OK
+                    <Check className="h-5 w-5" />
                 </button>
             </div>
         </div>

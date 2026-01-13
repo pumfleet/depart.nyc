@@ -215,7 +215,7 @@ export default function TransferPage() {
     return (
         <div className="min-h-screen bg-black text-white flex flex-col">
             {/* Header */}
-            <div className="sticky top-0 bg-black border-b border-neutral-800 p-4 z-10">
+            <div className="sticky top-0 bg-black border-b-2 border-neutral-800 p-4 z-10">
                 <div className="flex items-center justify-between">
                     <Link href={`/trips/${tripId}`} className="flex items-center gap-2 text-neutral-400 hover:text-white">
                         <ArrowLeft size={20} />
@@ -231,7 +231,7 @@ export default function TransferPage() {
 
             {/* Transfer Window */}
             {arrivalTime && departureTime && (
-                <div className="p-4 border-b border-neutral-800">
+                <div className="p-4 border-b-2 border-neutral-800">
                     <TransferWindow
                         arrivalTime={arrivalTime}
                         departureTime={departureTime}
@@ -245,8 +245,8 @@ export default function TransferPage() {
             {/* Split View - Always side by side */}
             <div className="flex flex-1">
                 {/* Current Trip */}
-                <div className="flex-1 border-r border-neutral-800 min-w-0">
-                    <div className="sticky top-[73px] bg-black border-b border-neutral-800 p-2">
+                <div className="flex-1 border-r-2 border-neutral-800 min-w-0">
+                    <div className="sticky top-[73px] bg-black border-b-2 border-neutral-800 p-2">
                         <div className="flex items-center gap-1.5">
                             <RouteBadge routeId={currentTrip.route.id} color={currentTrip.route.color} size="small" />
                             <span className="text-xs font-medium">Your Train</span>
@@ -267,7 +267,7 @@ export default function TransferPage() {
 
                 {/* Transfer Trip */}
                 <div className="flex-1 min-w-0">
-                    <div className="sticky top-[73px] bg-black border-b border-neutral-800 p-2">
+                    <div className="sticky top-[73px] bg-black border-b-2 border-neutral-800 p-2">
                         <div className="flex items-center gap-1.5">
                             <RouteBadge routeId={transferTrip.route.id} color={transferTrip.route.color} size="small" />
                             <span className="text-xs font-medium">Transfer</span>

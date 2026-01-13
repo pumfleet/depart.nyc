@@ -188,7 +188,7 @@ export default function TransferModal({
             {/* Modal */}
             <div className="relative bg-neutral-900 w-full sm:w-96 sm:rounded-lg max-h-[80vh] overflow-hidden">
                 {/* Header */}
-                <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-neutral-900 border-b-2 border-neutral-800 p-4 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-semibold text-white">Transfer at</h2>
                         <p className="text-orange-500 font-medium">{stationName}</p>

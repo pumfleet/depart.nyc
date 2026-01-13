@@ -93,7 +93,7 @@ export default function TripPage() {
 
     return (
         <div className="min-h-screen bg-black text-white">
-            <div className="sticky flex top-0 bg-black border-b border-neutral-800 p-4 z-10">
+            <div className="sticky flex top-0 bg-black border-b-2 border-neutral-800 p-4 z-10">
                 <div className="flex items-center gap-3">
                     <RouteBadge routeId={tripData.route.id} color={tripData.route.color} />
                     <div>
