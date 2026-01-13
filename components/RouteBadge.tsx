@@ -3,7 +3,7 @@ import React from 'react';
 interface RouteBadgeProps {
     routeId: string;
     color: string;
-    size?: 'default' | 'small';
+    size?: 'default' | 'small' | 'xs';
 }
 
 export default function RouteBadge({ routeId, color, size = 'default' }: RouteBadgeProps) {
@@ -28,9 +28,11 @@ export default function RouteBadge({ routeId, color, size = 'default' }: RouteBa
     const displayId = isExpress ? routeId.slice(0, -1) : routeId;
 
     // Size variants
-    const sizeClasses = size === 'small'
-        ? 'w-6 h-6 text-sm'
-        : 'w-7 h-7 text-lg';
+    const sizeClasses = size === 'xs'
+        ? 'w-4 h-4 text-[10px]'
+        : size === 'small'
+            ? 'w-6 h-6 text-sm'
+            : 'w-7 h-7 text-lg';
 
     return (
         <div

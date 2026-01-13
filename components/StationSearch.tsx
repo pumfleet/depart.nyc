@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Fuse from "fuse.js";
 import stationsData from "../data/stations.json";
 import RouteBadge from "./RouteBadge";
+import { getLineColor } from "@/lib/colors";
 
 type Station = {
     id: string;
@@ -124,7 +125,7 @@ export default function StationSearch() {
                                     <RouteBadge
                                         key={line}
                                         routeId={line}
-                                        color={getLineColor(line).replace('#', '')}
+                                        color={getLineColor(line)}
                                         size="small"
                                     />
                                 ))}
@@ -135,22 +136,4 @@ export default function StationSearch() {
             )}
         </div>
     );
-}
-
-// Helper to get line colors (simplified version of what might be in the app)
-function getLineColor(line: string): string {
-    const colors: Record<string, string> = {
-        "1": "#EE352E", "2": "#EE352E", "3": "#EE352E",
-        "4": "#00933C", "5": "#00933C", "6": "#00933C", "6X": "#00933C",
-        "7": "#B933AD", "7X": "#B933AD",
-        "A": "#0039A6", "C": "#0039A6", "E": "#0039A6",
-        "B": "#FF6319", "D": "#FF6319", "F": "#FF6319", "FX": "#FF6319", "M": "#FF6319",
-        "G": "#6CBE45",
-        "J": "#996633", "Z": "#996633",
-        "L": "#A7A9AC",
-        "N": "#FCCC0A", "Q": "#FCCC0A", "R": "#FCCC0A", "W": "#FCCC0A",
-        "S": "#808183",
-        "SIR": "#0039A6"
-    };
-    return colors[line] || "#808183";
 }
