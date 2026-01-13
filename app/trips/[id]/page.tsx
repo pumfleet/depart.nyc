@@ -7,6 +7,8 @@ import RouteBadge from '@/components/RouteBadge';
 import TripTimeline from '@/components/TripTimeline';
 import TransferModal from '@/components/TransferModal';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import Loading from '@/components/Loading';
+import ErrorScreen from '@/components/ErrorScreen';
 import { useTrip } from '@/lib/hooks/useTrip';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
@@ -55,15 +57,15 @@ export default function TripPage() {
     };
 
     if (isLoading && !trip) {
-        return <div className="p-4 text-white">Loading...</div>;
+        return <Loading />;
     }
 
     if (error && !trip) {
-        return <div className="p-4 text-red-500">Failed to fetch trip data</div>;
+        return <ErrorScreen message="Failed to load trip" />;
     }
 
     if (!trip) {
-        return <div className="p-4 text-white">Trip not found</div>;
+        return <ErrorScreen message="Trip not found" />;
     }
 
     return (

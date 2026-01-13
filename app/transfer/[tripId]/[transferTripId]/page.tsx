@@ -3,7 +3,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
+import Loading from '@/components/Loading';
+import ErrorScreen from '@/components/ErrorScreen';
 import Link from 'next/link';
 import RouteBadge from '@/components/RouteBadge';
 import TripTimeline, { TripData } from '@/components/TripTimeline';
@@ -186,27 +188,15 @@ export default function TransferPage() {
     }, [getArrivalTime, getDepartureTime]);
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
-                <div className="text-neutral-400">Loading transfer information...</div>
-            </div>
-        );
+        return <Loading />;
     }
 
     if (error) {
-        return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
-                <div className="text-red-500">{error}</div>
-            </div>
-        );
+        return <ErrorScreen message="Failed to load transfer" />;
     }
 
     if (!currentTrip || !transferTrip) {
-        return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
-                <div className="text-neutral-400">Trip not found</div>
-            </div>
-        );
+        return <ErrorScreen message="Trip not found" />;
     }
 
     const arrivalTime = getArrivalTime();
@@ -217,9 +207,8 @@ export default function TransferPage() {
             {/* Header */}
             <div className="sticky top-0 bg-black border-b-2 border-neutral-800 p-4 z-10">
                 <div className="flex items-center justify-between">
-                    <Link href={`/trips/${tripId}`} className="flex items-center gap-2 text-neutral-400 hover:text-white">
-                        <ArrowLeft size={20} />
-                        <span>Back</span>
+                    <Link href={`/trips/${tripId}`} className="flex items-center text-neutral-400 hover:text-white">
+                        <ChevronLeft className="w-8 h-8 mr-8" />
                     </Link>
                     <div className="text-center">
                         <h1 className="text-lg font-semibold">Transfer</h1>

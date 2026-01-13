@@ -178,7 +178,7 @@ export default function TripTimeline({
                             {/* Stop indicator */}
                             <div
                                 className={`relative z-10 rounded-full border-2 ${mini ? 'w-4 h-4 mt-0.5 mr-2' : 'w-5 h-5 mt-1 mr-4'} ${
-                                    isActive || isHighlighted ? 'border-orange-500' :
+                                    isActive || isHighlighted ? 'border-white' :
                                     isNext ? 'bg-black animate-pulse' :
                                     !isDeparted ? 'bg-black border-neutral-600' : ''
                                 }`}

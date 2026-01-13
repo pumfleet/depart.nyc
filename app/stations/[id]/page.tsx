@@ -6,6 +6,8 @@ import StationHeader from '@/components/StationHeader';
 import DepartureBoard from '@/components/DepartureBoard';
 import Alerts from '@/components/Alerts';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import Loading from '@/components/Loading';
+import ErrorScreen from '@/components/ErrorScreen';
 import { useStation } from '@/lib/hooks/useStation';
 import { useRoutes } from '@/lib/hooks/useRoutes';
 import { useStationAlerts } from '@/lib/hooks/useStationAlerts';
@@ -24,15 +26,15 @@ export default function StationPage() {
     }, [id]);
 
     if (isLoading && !station) {
-        return <div className="p-4 text-white">Loading...</div>;
+        return <Loading />;
     }
 
     if (error && !station) {
-        return <div className="p-4 text-red-500">Failed to fetch station data</div>;
+        return <ErrorScreen message="Failed to load station" />;
     }
 
     if (!station) {
-        return <div className="p-4 text-white">Station not found</div>;
+        return <ErrorScreen message="Station not found" />;
     }
 
     return (
