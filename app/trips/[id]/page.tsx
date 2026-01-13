@@ -8,6 +8,7 @@ import TripTimeline, { TripData } from '@/components/TripTimeline';
 import TransferModal from '@/components/TransferModal';
 import { fetchTrip } from '@/lib/api';
 import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
 
 export default function TripPage() {
     const { id } = useParams();
@@ -94,9 +95,12 @@ export default function TripPage() {
     return (
         <div className="min-h-screen bg-black text-white">
             <div className="sticky flex top-0 bg-black border-b-2 border-neutral-800 p-4 z-10">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center">
+                    <Link href={"/stations/" + activeStation} className="flex items-center justify-center w-8 h-8 text-neutral-400 hover:text-white">
+                        <ChevronLeft className="w-8 h-8 -ml-4" />
+                    </Link>
                     <RouteBadge routeId={tripData.route.id} color={tripData.route.color} />
-                    <div>
+                    <div className="ml-4">
                         <h1 className="text-xl font-bold">Trip {tripData.id.split('_')[0]}</h1>
                         <p className="text-sm text-neutral-400">
                             {tripData.stopTimes.length > 0 &&
@@ -104,9 +108,6 @@ export default function TripPage() {
                         </p>
                     </div>
                 </div>
-                <Link href={`/stations/${activeStation}`} className="ml-auto mt-2.5 mr-2 font-medium text-xl">
-                    &lt; Back
-                </Link>
             </div>
 
             <div className="p-4">

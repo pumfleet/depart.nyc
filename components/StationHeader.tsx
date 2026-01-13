@@ -16,7 +16,6 @@ export default function StationHeader({ name, routes = [] }: StationHeaderProps)
     return (
         <header className="p-6">
             <div className="flex items-center justify-between gap-4">
-
                 <h1 className="text-4xl font-medium tracking-tighter flex">
                     <Link href="/" className="mt-1 mr-1 text-neutral-400 hover:text-white">
                         <ChevronLeft className="w-8 h-8 -ml-4" />
