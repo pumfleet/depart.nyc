@@ -94,7 +94,7 @@ export default function TripPage() {
 
     return (
         <div className="min-h-screen bg-black text-white">
-            <div className="sticky flex top-0 bg-black border-b-2 border-neutral-800 p-4 z-10">
+            <div className="sticky flex top-0 bg-black border-b-2 border-neutral-800 p-4 z-50">
                 <div className="flex items-center">
                     <Link href={"/stations/" + activeStation} className="flex items-center justify-center w-8 h-8 text-neutral-400 hover:text-white">
                         <ChevronLeft className="w-8 h-8 -ml-4" />

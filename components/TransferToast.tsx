@@ -78,7 +78,7 @@ export function showTightConnectionToast(minutes: number): void {
             </div>
         </div>
     ), {
-        duration: 4000,
+        duration: 8000,
         position: 'top-center',
     });
 }
