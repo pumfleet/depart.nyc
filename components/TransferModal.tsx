@@ -84,8 +84,8 @@ export default function TransferModal({
 
                 const stationResults = await Promise.all(stationPromises);
 
-                // Collect all available lines from all stations
-                const lineMap = new Map<string, { stationId: string; stationName: string; departures: StopTime[] }>();
+                // Collect all available lines from all stations, grouped by route AND direction
+                const lineMap = new Map<string, { stationId: string; stationName: string; line: string; headsign: string; departures: StopTime[] }>();
 
                 stationResults.forEach((result) => {
                     if (!result?.data) return;
@@ -105,37 +105,60 @@ export default function TransferModal({
                                 return st.trip.route.id === route.id && depTime >= arrivalTime + minTransferTime;
                             });
 
-                            // Only add if we have departures, or update if this station has more
-                            const existing = lineMap.get(route.id);
-                            if (!existing || departures.length > existing.departures.length) {
-                                lineMap.set(route.id, {
-                                    stationId,
-                                    stationName: data.name,
-                                    departures
-                                });
-                            }
+                            // Group departures by headsign (direction)
+                            const departuresByHeadsign = new Map<string, StopTime[]>();
+                            departures.forEach((dep: StopTime) => {
+                                const headsign = dep.headsign || 'Unknown';
+                                const existing = departuresByHeadsign.get(headsign) || [];
+                                existing.push(dep);
+                                departuresByHeadsign.set(headsign, existing);
+                            });
+
+                            // Add each direction as a separate entry
+                            departuresByHeadsign.forEach((directionDepartures, headsign) => {
+                                const key = `${route.id}|${headsign}`;
+                                const existing = lineMap.get(key);
+
+                                // Only add if we have departures, or update if this station has more
+                                if (!existing || directionDepartures.length > existing.departures.length) {
+                                    lineMap.set(key, {
+                                        stationId,
+                                        stationName: data.name,
+                                        line: route.id,
+                                        headsign,
+                                        departures: directionDepartures
+                                    });
+                                }
+                            });
                         });
                     });
                 });
 
                 // Convert to options array
-                const options: TransferLineOption[] = Array.from(lineMap.entries()).map(([line, info]) => {
+                const options: TransferLineOption[] = Array.from(lineMap.entries()).map(([_key, info]) => {
                     const sortedDepartures = info.departures.sort((a, b) =>
                         parseInt(a.arrival.time) - parseInt(b.arrival.time)
                     );
 
                     return {
-                        line,
+                        line: info.line,
                         stationId: info.stationId,
                         stationName: info.stationName,
-                        color: getLineColor(line),
+                        color: getLineColor(info.line),
                         nextDeparture: sortedDepartures[0] || null,
                         loading: false
                     };
                 });
 
-                // Sort by line ID for consistent ordering
-                options.sort((a, b) => a.line.localeCompare(b.line));
+                // Sort by line ID, then by headsign for consistent ordering
+                options.sort((a, b) => {
+                    const lineCompare = a.line.localeCompare(b.line);
+                    if (lineCompare !== 0) return lineCompare;
+                    // Sort by headsign within same line
+                    const headsignA = a.nextDeparture?.headsign || '';
+                    const headsignB = b.nextDeparture?.headsign || '';
+                    return headsignA.localeCompare(headsignB);
+                });
 
                 setTransferOptions(options);
             } catch (error) {
@@ -217,9 +240,9 @@ export default function TransferModal({
                                 Select a line to see connection timing
                             </p>
 
-                            {transferOptions.map((option) => (
+                            {transferOptions.map((option, index) => (
                                 <button
-                                    key={option.line}
+                                    key={`${option.line}-${option.nextDeparture?.headsign || index}`}
                                     onClick={() => handleSelectTransfer(option)}
                                     disabled={!option.nextDeparture}
                                     className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
