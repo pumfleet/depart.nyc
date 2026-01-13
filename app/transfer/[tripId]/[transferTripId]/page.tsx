@@ -8,7 +8,7 @@ import Link from 'next/link';
 import RouteBadge from '@/components/RouteBadge';
 import TripTimeline, { TripData } from '@/components/TripTimeline';
 import TransferWindow from '@/components/TransferWindow';
-import { showTransferUpdatedToast, showNoMoreTrainsToast, showTightConnectionToast } from '@/components/TransferToast';
+import { showTransferUpdatedToast, showNoMoreTrainsToast, showTightConnectionToast, showArrivedAtStationToast } from '@/components/TransferToast';
 import { fetchTrip, fetchStation } from '@/lib/api';
 import { getStationIdForLine } from '@/lib/station-lookup';
 import { getCurrentPosition } from '@/lib/transfer-utils';
@@ -102,8 +102,11 @@ export default function TransferPage() {
         // If we've passed or are at the transfer station, redirect to station page
         if (transferStopIndex !== -1 && position.currentStopIndex >= transferStopIndex) {
             // Get the station ID for the transfer line (using departure station name)
-            const stationId = getStationIdForLine(departureStation, transferTrip?.route.id || '');
+            const transferRouteId = transferTrip?.route.id || '';
+            const stationId = getStationIdForLine(departureStation, transferRouteId);
             if (stationId) {
+                // Show toast with arrival notification
+                showArrivedAtStationToast(arrivalStation, transferRouteId);
                 // Store the active station for navigation
                 localStorage.setItem('activeStation', stationId);
                 router.push(`/stations/${stationId}`);
@@ -133,12 +136,13 @@ export default function TransferPage() {
         try {
             const stationData = await fetchStation(stationId);
 
-            // Find the next train on this route after our arrival
+            // Find the next train on this route after our arrival (require at least 15 sec)
+            const minTransferTime = 15; // 15 seconds minimum for cross-platform
             const nextTrains = stationData.stopTimes
                 .filter((st: StopTime) => {
                     const depTime = parseInt(st.departure?.time || st.arrival.time);
                     return st.trip.route.id === transferRouteId &&
-                        depTime > arrivalTime &&
+                        depTime >= arrivalTime + minTransferTime &&
                         st.trip.id !== transferTripId; // Exclude current transfer trip
                 })
                 .sort((a: StopTime, b: StopTime) =>
@@ -209,7 +213,7 @@ export default function TransferPage() {
     const departureTime = getDepartureTime();
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-black text-white flex flex-col">
             {/* Header */}
             <div className="sticky top-0 bg-black border-b border-neutral-800 p-4 z-10">
                 <div className="flex items-center justify-between">
@@ -238,48 +242,46 @@ export default function TransferPage() {
                 </div>
             )}
 
-            {/* Split View */}
-            <div className="flex flex-col lg:flex-row">
+            {/* Split View - Always side by side */}
+            <div className="flex flex-1">
                 {/* Current Trip */}
-                <div className="flex-1 border-b lg:border-b-0 lg:border-r border-neutral-800">
-                    <div className="sticky top-[73px] bg-black border-b border-neutral-800 p-3">
-                        <div className="flex items-center gap-2">
+                <div className="flex-1 border-r border-neutral-800 min-w-0">
+                    <div className="sticky top-[73px] bg-black border-b border-neutral-800 p-2">
+                        <div className="flex items-center gap-1.5">
                             <RouteBadge routeId={currentTrip.route.id} color={currentTrip.route.color} size="small" />
-                            <span className="text-sm font-medium">Your Train</span>
-                            <ArrowRight size={14} className="text-neutral-500 ml-auto" />
+                            <span className="text-xs font-medium">Your Train</span>
                         </div>
-                        <p className="text-xs text-neutral-500 mt-1">
+                        <p className="text-xs text-neutral-500 ml-7 truncate">
                             To {currentTrip.stopTimes[currentTrip.stopTimes.length - 1]?.stop.name}
                         </p>
                     </div>
-                    <div className="p-4">
+                    <div className="p-2">
                         <TripTimeline
                             tripData={currentTrip}
                             currentTime={currentTime}
                             highlightStation={arrivalStation}
-                            compact={true}
+                            mini={true}
                         />
                     </div>
                 </div>
 
                 {/* Transfer Trip */}
-                <div className="flex-1">
-                    <div className="sticky top-[73px] bg-black border-b border-neutral-800 p-3">
-                        <div className="flex items-center gap-2">
-                            <ArrowRight size={14} className="text-neutral-500" />
+                <div className="flex-1 min-w-0">
+                    <div className="sticky top-[73px] bg-black border-b border-neutral-800 p-2">
+                        <div className="flex items-center gap-1.5">
                             <RouteBadge routeId={transferTrip.route.id} color={transferTrip.route.color} size="small" />
-                            <span className="text-sm font-medium">Transfer Train</span>
+                            <span className="text-xs font-medium">Transfer</span>
                         </div>
-                        <p className="text-xs text-neutral-500 mt-1">
+                        <p className="text-xs text-neutral-500 ml-7 truncate">
                             To {transferTrip.stopTimes[transferTrip.stopTimes.length - 1]?.stop.name}
                         </p>
                     </div>
-                    <div className="p-4">
+                    <div className="p-2">
                         <TripTimeline
                             tripData={transferTrip}
                             currentTime={currentTime}
                             highlightStation={departureStation}
-                            compact={true}
+                            mini={true}
                         />
                     </div>
                 </div>

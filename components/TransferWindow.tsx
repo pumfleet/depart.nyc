@@ -21,7 +21,8 @@ export default function TransferWindow({
     onTightConnection
 }: TransferWindowProps) {
     const hasNotifiedMissed = useRef(false);
-    const hasNotifiedTight = useRef(false);
+    const previousStatus = useRef<TransferStatus | null>(null);
+    const isInitialLoad = useRef(true);
 
     const currentTimeUnix = currentTime.unix();
     const result = calculateTransferWindow(arrivalTime, departureTime, currentTimeUnix);
@@ -34,9 +35,15 @@ export default function TransferWindow({
     const hasArrived = currentTimeUnix >= arrivalTime;
 
     useEffect(() => {
-        // Notify when transfer becomes tight
-        if (result.status === 'tight' && !hasNotifiedTight.current) {
-            hasNotifiedTight.current = true;
+        // Skip notifications on initial load - user can see the status visually
+        if (isInitialLoad.current) {
+            isInitialLoad.current = false;
+            previousStatus.current = result.status;
+            return;
+        }
+
+        // Only notify when status transitions to tight (from comfortable)
+        if (result.status === 'tight' && previousStatus.current === 'comfortable') {
             onTightConnection?.();
         }
 
@@ -45,6 +52,8 @@ export default function TransferWindow({
             hasNotifiedMissed.current = true;
             onTransferMissed();
         }
+
+        previousStatus.current = result.status;
     }, [result.status, onTransferMissed, onTightConnection]);
 
     const formatTime = (seconds: number): string => {

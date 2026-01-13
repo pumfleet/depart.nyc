@@ -91,8 +91,8 @@ export function calculateTransferWindow(
     let status: TransferStatus;
     if (timeUntilDeparture <= 0) {
         status = 'missed';
-    } else if (delta < 60) {
-        status = 'missed'; // Less than 1 minute is effectively missed
+    } else if (delta < 15) {
+        status = 'missed'; // Less than 15 seconds is effectively missed
     } else if (delta < 180) {
         status = 'tight'; // Less than 3 minutes
     } else {

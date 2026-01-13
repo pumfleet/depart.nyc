@@ -24,6 +24,7 @@ interface TripTimelineProps {
     activeStation?: string | null;
     highlightStation?: string;
     compact?: boolean;
+    mini?: boolean; // Even more compact for mobile side-by-side view
     showTransferIcons?: boolean;
     onTransferClick?: (stationName: string, stopId: string, arrivalTime: number) => void;
 }
@@ -34,9 +35,12 @@ export default function TripTimeline({
     activeStation,
     highlightStation,
     compact = false,
+    mini = false,
     showTransferIcons = false,
     onTransferClick
 }: TripTimelineProps) {
+    // Mini mode implies compact
+    const isCompact = compact || mini;
     const formatTime = (timestamp: string) => {
         return dayjs.unix(parseInt(timestamp)).format('h:mm A');
     };
@@ -54,25 +58,32 @@ export default function TripTimeline({
 
     const position = getCurrentPosition(tripData.stopTimes, currentTime.unix());
 
-    // Calculate which stops to show (3 before current position + all future stops)
+    // Calculate which stops to show
     const getVisibleStops = () => {
         if (!position || !tripData) return tripData.stopTimes;
 
         const currentIdx = position.currentStopIndex;
-        const startIdx = Math.max(0, currentIdx - 2);
 
+        // In mini mode, show 1 stop before current + all future stops
+        if (mini) {
+            const startIdx = Math.max(0, currentIdx - 1);
+            return tripData.stopTimes.slice(startIdx);
+        }
+
+        // Default: 2 before current position + all future stops
+        const startIdx = Math.max(0, currentIdx - 2);
         return tripData.stopTimes.slice(startIdx);
     };
 
     const visibleStops = getVisibleStops();
-    const hiddenStopsCount = tripData.stopTimes.length - visibleStops.length;
+    const hiddenStopsCount = tripData.stopTimes.indexOf(visibleStops[0]);
 
     return (
         <div className="relative">
             {/* Indicator for hidden stops */}
             {hiddenStopsCount > 0 && (
-                <div className={`mb-4 text-sm text-neutral-500 italic ${compact ? 'text-xs' : ''}`}>
-                    {hiddenStopsCount} earlier {hiddenStopsCount === 1 ? 'stop' : 'stops'} hidden
+                <div className={`mb-2 text-neutral-500 italic ${mini ? 'text-[10px]' : isCompact ? 'text-xs' : 'text-sm'}`}>
+                    {hiddenStopsCount} earlier {hiddenStopsCount === 1 ? 'stop' : 'stops'}
                 </div>
             )}
 
@@ -109,10 +120,10 @@ export default function TripTimeline({
                         {/* Connecting line from previous stop (static, not animated) */}
                         {showConnectingLine && !showTrainBetweenStops && (
                             <div
-                                className="absolute left-2 w-1"
+                                className={`absolute w-1 ${mini ? 'left-1.5' : 'left-2'}`}
                                 style={{
-                                    top: compact ? '-48px' : '-64px',
-                                    height: compact ? '52px' : '68px',
+                                    top: mini ? '-32px' : isCompact ? '-48px' : '-64px',
+                                    height: mini ? '36px' : isCompact ? '52px' : '68px',
                                     backgroundColor: isPreviousDeparted ? `#${tripData.route.color}` : '#404040'
                                 }}
                             />
@@ -123,10 +134,10 @@ export default function TripTimeline({
                             <>
                                 {/* Progress bar */}
                                 <div
-                                    className="absolute left-2 w-1"
+                                    className={`absolute w-1 ${mini ? 'left-1.5' : 'left-2'}`}
                                     style={{
-                                        top: compact ? '-48px' : '-64px',
-                                        height: compact ? '48px' : '64px',
+                                        top: mini ? '-32px' : isCompact ? '-48px' : '-64px',
+                                        height: mini ? '32px' : isCompact ? '48px' : '64px',
                                     }}
                                 >
                                     {/* Completed portion (route color) */}
@@ -149,9 +160,9 @@ export default function TripTimeline({
 
                                 {/* Train position indicator - positioned on the progress */}
                                 <div
-                                    className="absolute left-0.5 w-4 h-4 rounded-full border-2 border-white z-20"
+                                    className={`absolute rounded-full border-2 border-white z-20 ${mini ? 'left-0.5 w-3 h-3' : 'left-0.5 w-4 h-4'}`}
                                     style={{
-                                        top: `${(compact ? -48 : -64) + ((compact ? 48 : 64) * position.progress / 100)}px`,
+                                        top: `${(mini ? -32 : isCompact ? -48 : -64) + ((mini ? 32 : isCompact ? 48 : 64) * position.progress / 100)}px`,
                                         backgroundColor: `#${tripData.route.color}`
                                     }}
                                 >
@@ -163,10 +174,10 @@ export default function TripTimeline({
                             </>
                         )}
 
-                        <div className={`flex items-start ${visibleIndex === visibleStops.length - 1 ? '' : compact ? 'mb-6' : 'mb-8'} ${isActive || isHighlighted ? '-mx-4 px-4' : ''}`}>
+                        <div className={`flex items-start ${visibleIndex === visibleStops.length - 1 ? '' : mini ? 'mb-4' : isCompact ? 'mb-6' : 'mb-8'} ${isActive || isHighlighted ? (mini ? '-mx-1 px-1' : '-mx-4 px-4') : ''}`}>
                             {/* Stop indicator */}
                             <div
-                                className={`relative z-10 w-5 h-5 mt-1 mr-4 rounded-full border-2 ${
+                                className={`relative z-10 rounded-full border-2 ${mini ? 'w-4 h-4 mt-0.5 mr-2' : 'w-5 h-5 mt-1 mr-4'} ${
                                     isActive || isHighlighted ? 'border-orange-500' :
                                     isNext ? 'bg-black animate-pulse' :
                                     !isDeparted ? 'bg-black border-neutral-600' : ''
@@ -190,15 +201,15 @@ export default function TripTimeline({
 
                             {/* Stop information */}
                             <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start gap-2">
+                                <div className={`flex justify-between items-start ${mini ? 'gap-1' : 'gap-2'}`}>
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1">
                                             <h3 className={`font-semibold truncate ${
                                                 isActive || isHighlighted ? 'text-orange-500' : 'text-white'
-                                            } ${compact ? 'text-sm' : ''}`}>
+                                            } ${mini ? 'text-xs' : isCompact ? 'text-sm' : ''}`}>
                                                 {stopTime.stop.name}
                                             </h3>
-                                            {showTransfer && (
+                                            {showTransfer && !mini && (
                                                 <button
                                                     onClick={() => onTransferClick?.(
                                                         canonicalName,
@@ -208,11 +219,11 @@ export default function TripTimeline({
                                                     className="flex-shrink-0 p-1 text-neutral-400 hover:text-orange-500 hover:bg-neutral-800 rounded transition-colors"
                                                     title="View transfer options"
                                                 >
-                                                    <ArrowRightLeft size={compact ? 14 : 16} />
+                                                    <ArrowRightLeft size={isCompact ? 14 : 16} />
                                                 </button>
                                             )}
                                         </div>
-                                        {!compact && (
+                                        {!isCompact && (
                                             <div className="flex gap-4 mt-1 text-sm text-neutral-400">
                                                 <span>Track {stopTime.track}</span>
                                                 {stopTime.departure && stopTime.departure.time !== stopTime.arrival.time && (
@@ -226,7 +237,7 @@ export default function TripTimeline({
                                                 )}
                                             </div>
                                         )}
-                                        {compact && (
+                                        {isCompact && !mini && (
                                             <div className="text-xs text-neutral-400">
                                                 {formatTime(stopTime.arrival.time)}
                                             </div>
@@ -234,13 +245,13 @@ export default function TripTimeline({
                                     </div>
                                     <div className="text-right flex-shrink-0">
                                         {isDeparted ? (
-                                            <span className={`text-neutral-500 ${compact ? 'text-xs' : 'text-sm'}`}>Departed</span>
+                                            <span className={`text-neutral-500 ${mini ? 'text-[10px]' : isCompact ? 'text-xs' : 'text-sm'}`}>Departed</span>
                                         ) : (
                                             <div>
-                                                <div className={`font-mono font-bold text-neutral-300 ${compact ? 'text-sm' : 'text-lg'}`}>
+                                                <div className={`font-mono font-bold text-neutral-300 ${mini ? 'text-xs' : isCompact ? 'text-sm' : 'text-lg'}`}>
                                                     {formatCountdown(stopTime.arrival.time)}
                                                 </div>
-                                                {!compact && (
+                                                {!isCompact && (
                                                     <div className="text-xs text-neutral-500">until arrival</div>
                                                 )}
                                             </div>

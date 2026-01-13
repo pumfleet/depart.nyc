@@ -98,10 +98,11 @@ export default function TransferModal({
                             // Skip the current line
                             if (route.id === currentRouteId) return;
 
-                            // Find departures for this line
+                            // Find departures for this line (require at least 15 sec transfer time)
+                            const minTransferTime = 15; // 15 seconds minimum for cross-platform
                             const departures = data.stopTimes.filter((st: StopTime) => {
                                 const depTime = parseInt(st.departure?.time || st.arrival.time);
-                                return st.trip.route.id === route.id && depTime > arrivalTime;
+                                return st.trip.route.id === route.id && depTime >= arrivalTime + minTransferTime;
                             });
 
                             // Only add if we have departures, or update if this station has more
