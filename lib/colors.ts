@@ -14,3 +14,25 @@ export function getLineColor(line: string): string {
     };
     return colors[line] || "808183";
 }
+
+export function getTrainCars(line: string): number {
+    // A Division (IRT) runs 10-car trains
+    // B Division (BMT/IND) runs 8-car trains, except G (4) and A (10)
+    const cars: Record<string, number> = {
+        // A Division - 10 cars (except 7 and 7X)
+        "1": 10, "2": 10, "3": 10,
+        "4": 10, "5": 10, "6": 10, "6X": 10,
+        "7": 11, "7X": 11,
+        // B Division - 8 cars (except noted)
+        "A": 10,
+        "B": 8, "C": 8, "D": 10, "E": 10,
+        "F": 10, "FX": 10, "M": 8,
+        "G": 5,
+        "J": 8, "Z": 8,
+        "L": 8,
+        "N": 10, "Q": 10, "R": 10, "W": 10,
+        "S": 6,
+        "SIR": 4
+    };
+    return cars[line] || 8;
+}

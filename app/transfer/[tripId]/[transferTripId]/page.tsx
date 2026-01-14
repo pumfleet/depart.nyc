@@ -15,6 +15,7 @@ import { fetchTrip, fetchStation } from '@/lib/api';
 import { getStationIdForLine } from '@/lib/station-lookup';
 import { getCurrentPosition } from '@/lib/transfer-utils';
 import { StopTime } from '@/lib/types';
+import { getTrainCars } from '@/lib/colors';
 
 export default function TransferPage() {
     const params = useParams();
@@ -239,6 +240,7 @@ export default function TransferPage() {
                         <div className="flex items-center gap-1.5">
                             <RouteBadge routeId={currentTrip.route.id} color={currentTrip.route.color} size="small" />
                             <span className="text-xs font-medium">Your Train</span>
+                            <span className="text-xs text-neutral-500">{getTrainCars(currentTrip.route.id)} cars</span>
                         </div>
                         <p className="text-xs text-neutral-500 ml-7 truncate">
                             To {currentTrip.stopTimes[currentTrip.stopTimes.length - 1]?.stop.name}
@@ -260,6 +262,7 @@ export default function TransferPage() {
                         <div className="flex items-center gap-1.5">
                             <RouteBadge routeId={transferTrip.route.id} color={transferTrip.route.color} size="small" />
                             <span className="text-xs font-medium">Transfer</span>
+                            <span className="text-xs text-neutral-500">{getTrainCars(transferTrip.route.id)} cars</span>
                         </div>
                         <p className="text-xs text-neutral-500 ml-7 truncate">
                             To {transferTrip.stopTimes[transferTrip.stopTimes.length - 1]?.stop.name}

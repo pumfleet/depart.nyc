@@ -12,6 +12,7 @@ import ErrorScreen from '@/components/ErrorScreen';
 import { useTrip } from '@/lib/hooks/useTrip';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
+import { getTrainCars } from '@/lib/colors';
 
 export default function TripPage() {
     const { id } = useParams();
@@ -78,10 +79,9 @@ export default function TripPage() {
                     </Link>
                     <RouteBadge routeId={trip.route.id} color={trip.route.color} />
                     <div className="ml-4">
-                        <h1 className="text-xl font-bold">Trip {trip.id.split('_')[0]}</h1>
+                        <h1 className="text-xl font-bold">{trip.stopTimes.length > 0 && trip.stopTimes[trip.stopTimes.length - 1].stop.name}</h1>
                         <p className="text-sm text-neutral-400">
-                            {trip.stopTimes.length > 0 &&
-                                `To ${trip.stopTimes[trip.stopTimes.length - 1].stop.name}`}
+                            {getTrainCars(trip.route.id)} cars
                         </p>
                     </div>
                 </div>
