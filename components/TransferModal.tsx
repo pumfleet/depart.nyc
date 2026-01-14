@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Loader2, ChevronRight } from 'lucide-react';
-import dayjs from 'dayjs';
+import { X, Loader2 } from 'lucide-react';
 import RouteBadge from '@/components/RouteBadge';
 import { fetchStation } from '@/lib/api';
 import { StopTime, StationResponse, Transfer } from '@/lib/types';
@@ -19,13 +18,18 @@ interface TransferModalProps {
     arrivalTime: number;
 }
 
-interface TransferLineOption {
-    line: string;
+interface DirectionOption {
+    headsign: string;
     stationId: string;
     stationName: string;
+    nextDeparture: StopTime;
+    waitMinutes: number;
+}
+
+interface GroupedLineOption {
+    line: string;
     color: string;
-    nextDeparture: StopTime | null;
-    loading: boolean;
+    directions: DirectionOption[];
 }
 
 export default function TransferModal({
@@ -38,7 +42,7 @@ export default function TransferModal({
     arrivalTime
 }: TransferModalProps) {
     const router = useRouter();
-    const [transferOptions, setTransferOptions] = useState<TransferLineOption[]>([]);
+    const [groupedOptions, setGroupedOptions] = useState<GroupedLineOption[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -55,8 +59,6 @@ export default function TransferModal({
                 const stationData: StationResponse = await fetchStation(baseStopId);
 
                 // Collect all station IDs to check for transfers
-                // 1. The current station itself (for lines at this platform)
-                // 2. All connected transfer stations from the API
                 const stationIds = new Set<string>();
                 stationIds.add(baseStopId);
 
@@ -64,7 +66,6 @@ export default function TransferModal({
                 if (stationData.transfers) {
                     stationData.transfers.forEach((transfer: Transfer) => {
                         if (transfer.toStop?.id) {
-                            // Strip N/S suffix from transfer station IDs too
                             const transferId = transfer.toStop.id.replace(/[NS]$/, '');
                             stationIds.add(transferId);
                         }
@@ -84,7 +85,7 @@ export default function TransferModal({
 
                 const stationResults = await Promise.all(stationPromises);
 
-                // Collect all available lines from all stations, grouped by route AND direction
+                // Collect all available lines, grouped by route AND direction
                 const lineMap = new Map<string, { stationId: string; stationName: string; line: string; headsign: string; departures: StopTime[] }>();
 
                 stationResults.forEach((result) => {
@@ -92,14 +93,11 @@ export default function TransferModal({
 
                     const { stationId, data } = result;
 
-                    // Get all lines from service maps
                     data.serviceMaps?.forEach((serviceMap) => {
                         serviceMap.routes?.forEach((route) => {
-                            // Skip the current line
                             if (route.id === currentRouteId) return;
 
-                            // Find departures for this line (require at least 15 sec transfer time)
-                            const minTransferTime = 15; // 15 seconds minimum for cross-platform
+                            const minTransferTime = 15;
                             const departures = data.stopTimes.filter((st: StopTime) => {
                                 const depTime = parseInt(st.departure?.time || st.arrival.time);
                                 return st.trip.route.id === route.id && depTime >= arrivalTime + minTransferTime;
@@ -114,12 +112,10 @@ export default function TransferModal({
                                 departuresByHeadsign.set(headsign, existing);
                             });
 
-                            // Add each direction as a separate entry
                             departuresByHeadsign.forEach((directionDepartures, headsign) => {
                                 const key = `${route.id}|${headsign}`;
                                 const existing = lineMap.get(key);
 
-                                // Only add if we have departures, or update if this station has more
                                 if (!existing || directionDepartures.length > existing.departures.length) {
                                     lineMap.set(key, {
                                         stationId,
@@ -134,36 +130,55 @@ export default function TransferModal({
                     });
                 });
 
-                // Convert to options array
-                const options: TransferLineOption[] = Array.from(lineMap.entries()).map(([_key, info]) => {
+                // Group by line
+                const lineGroups = new Map<string, DirectionOption[]>();
+
+                lineMap.forEach((info) => {
                     const sortedDepartures = info.departures.sort((a, b) =>
                         parseInt(a.arrival.time) - parseInt(b.arrival.time)
                     );
 
-                    return {
-                        line: info.line,
+                    const nextDep = sortedDepartures[0];
+                    if (!nextDep) return;
+
+                    const depTime = parseInt(nextDep.departure?.time || nextDep.arrival.time);
+                    const waitSeconds = depTime - arrivalTime;
+                    const waitMinutes = Math.max(0, Math.floor(waitSeconds / 60));
+
+                    const direction: DirectionOption = {
+                        headsign: info.headsign,
                         stationId: info.stationId,
                         stationName: info.stationName,
-                        color: getLineColor(info.line),
-                        nextDeparture: sortedDepartures[0] || null,
-                        loading: false
+                        nextDeparture: nextDep,
+                        waitMinutes
                     };
+
+                    const existing = lineGroups.get(info.line) || [];
+                    existing.push(direction);
+                    lineGroups.set(info.line, existing);
                 });
 
-                // Sort by line ID, then by headsign for consistent ordering
-                options.sort((a, b) => {
-                    const lineCompare = a.line.localeCompare(b.line);
-                    if (lineCompare !== 0) return lineCompare;
-                    // Sort by headsign within same line
-                    const headsignA = a.nextDeparture?.headsign || '';
-                    const headsignB = b.nextDeparture?.headsign || '';
-                    return headsignA.localeCompare(headsignB);
+                // Convert to array and sort
+                const grouped: GroupedLineOption[] = Array.from(lineGroups.entries()).map(([line, directions]) => ({
+                    line,
+                    color: getLineColor(line),
+                    directions: directions.sort((a, b) => a.headsign.localeCompare(b.headsign))
+                }));
+
+                // Sort lines: numbers first, then letters
+                grouped.sort((a, b) => {
+                    const aNum = parseInt(a.line);
+                    const bNum = parseInt(b.line);
+                    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+                    if (!isNaN(aNum)) return -1;
+                    if (!isNaN(bNum)) return 1;
+                    return a.line.localeCompare(b.line);
                 });
 
-                setTransferOptions(options);
+                setGroupedOptions(grouped);
             } catch (error) {
                 console.error('Failed to load transfer options:', error);
-                setTransferOptions([]);
+                setGroupedOptions([]);
             } finally {
                 setLoading(false);
             }
@@ -172,30 +187,14 @@ export default function TransferModal({
         loadTransferOptions();
     }, [isOpen, stopId, currentRouteId, arrivalTime]);
 
-    const handleSelectTransfer = (option: TransferLineOption) => {
-        if (!option.nextDeparture) return;
-
-        const transferTripId = option.nextDeparture.trip.id;
-        // Pass both station names - arrival (on current trip) and departure (on transfer trip)
+    const handleSelectTransfer = (direction: DirectionOption) => {
+        const transferTripId = direction.nextDeparture.trip.id;
         const params = new URLSearchParams({
             arrivalStation: stationName,
-            departureStation: option.stationName
+            departureStation: direction.stationName
         });
         router.push(`/transfer/${currentTripId}/${transferTripId}?${params.toString()}`);
         onClose();
-    };
-
-    const formatDepartureTime = (timestamp: string) => {
-        return dayjs.unix(parseInt(timestamp)).format('h:mm A');
-    };
-
-    const formatWaitTime = (departureTime: string) => {
-        const depTime = parseInt(departureTime);
-        const waitSeconds = depTime - arrivalTime;
-
-        if (waitSeconds < 60) return '< 1 min wait';
-        const waitMinutes = Math.floor(waitSeconds / 60);
-        return `${waitMinutes} min wait`;
     };
 
     if (!isOpen) return null;
@@ -209,7 +208,7 @@ export default function TransferModal({
             />
 
             {/* Modal */}
-            <div className="relative bg-neutral-900 w-full sm:w-96 sm:rounded-lg max-h-[80vh] overflow-hidden">
+            <div className="relative bg-neutral-900 w-full sm:w-[480px] sm:rounded-lg max-h-[80vh] overflow-hidden">
                 {/* Header */}
                 <div className="sticky top-0 bg-neutral-900 border-b-2 border-neutral-800 p-4 flex items-center justify-between">
                     <div>
@@ -230,58 +229,44 @@ export default function TransferModal({
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="animate-spin text-neutral-400" size={24} />
                         </div>
-                    ) : transferOptions.length === 0 ? (
+                    ) : groupedOptions.length === 0 ? (
                         <p className="text-neutral-500 text-center py-8">
                             No transfer options available at this station.
                         </p>
                     ) : (
-                        <div className="space-y-2">
-                            <p className="text-sm text-neutral-500 mb-4">
-                                Select a line to see connection timing
-                            </p>
-
-                            {transferOptions.map((option, index) => (
-                                <button
-                                    key={`${option.line}-${option.nextDeparture?.headsign || index}`}
-                                    onClick={() => handleSelectTransfer(option)}
-                                    disabled={!option.nextDeparture}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                                        option.nextDeparture
-                                            ? 'bg-neutral-800 hover:bg-neutral-700'
-                                            : 'bg-neutral-800/50 cursor-not-allowed'
-                                    }`}
+                        <div className="space-y-3">
+                            {groupedOptions.map((group) => (
+                                <div
+                                    key={group.line}
+                                    className="flex items-center gap-3"
                                 >
-                                    <RouteBadge
-                                        routeId={option.line}
-                                        color={option.color}
-                                        size="small"
-                                    />
-
-                                    <div className="flex-1 text-left">
-                                        {option.nextDeparture ? (
-                                            <>
-                                                <div className="text-white text-sm font-medium">
-                                                    {option.nextDeparture.headsign || 'Unknown destination'}
-                                                </div>
-                                                <div className="text-neutral-400 text-xs">
-                                                    Departs {formatDepartureTime(option.nextDeparture.departure?.time || option.nextDeparture.arrival.time)}
-                                                    {' · '}
-                                                    {formatWaitTime(option.nextDeparture.departure?.time || option.nextDeparture.arrival.time)}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="text-neutral-500 text-sm">
-                                                No upcoming trains
-                                            </div>
-                                        )}
+                                    {/* Line badge */}
+                                    <div className="flex-shrink-0">
+                                        <RouteBadge
+                                            routeId={group.line}
+                                            color={group.color}
+                                            size="small"
+                                        />
                                     </div>
 
-                                    {option.nextDeparture && (
-                                        <div className="text-neutral-400 text-xs">
-                                            <ChevronRight className="w-4 h-4" />
-                                        </div>
-                                    )}
-                                </button>
+                                    {/* Direction buttons - grid ensures equal width columns */}
+                                    <div className="flex-1 grid grid-cols-2 gap-2">
+                                        {group.directions.map((direction) => (
+                                            <button
+                                                key={direction.headsign}
+                                                onClick={() => handleSelectTransfer(direction)}
+                                                className="bg-neutral-800 hover:bg-neutral-700 rounded-lg px-3 py-2 text-left transition-colors min-w-0"
+                                            >
+                                                <div className="text-white text-sm font-medium truncate">
+                                                    {direction.headsign}
+                                                </div>
+                                                <div className="text-neutral-400 text-xs">
+                                                    Departs in {direction.waitMinutes < 1 ? '<1' : direction.waitMinutes} min
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     )}
