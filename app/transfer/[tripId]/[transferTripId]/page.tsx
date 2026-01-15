@@ -35,6 +35,7 @@ export default function TransferPage() {
     const [error, setError] = useState<string | null>(null);
 
     const hasShownTightToast = useRef(false);
+    const hasTriggeredArrival = useRef(false);
     const isUpdatingTransfer = useRef(false);
 
     // Find arrival time at transfer station for current trip
@@ -92,7 +93,7 @@ export default function TransferPage() {
 
     // Check if we've arrived at the transfer station
     useEffect(() => {
-        if (!currentTrip || !arrivalStation) return;
+        if (!currentTrip || !arrivalStation || hasTriggeredArrival.current) return;
 
         const position = getCurrentPosition(currentTrip.stopTimes, currentTime.unix());
         if (!position) return;
@@ -108,6 +109,8 @@ export default function TransferPage() {
             const transferRouteId = transferTrip?.route.id || '';
             const stationId = getStationIdForLine(departureStation, transferRouteId);
             if (stationId) {
+                // Mark as triggered to prevent duplicate toasts
+                hasTriggeredArrival.current = true;
                 // Show toast with arrival notification
                 showArrivedAtStationToast(arrivalStation, transferRouteId);
                 // Store the active station for navigation
